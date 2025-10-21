@@ -149,7 +149,7 @@ class Pymon(Creature):
         super().__init__(name,location,des)
         self.energy = energy
         if speed == 0:
-            ran_speed = Operation.generate_random_number(max_number=20 , min_number=10)
+            ran_speed = Operation.generate_random_number(max_number=7 , min_number=1)
             self.speed = ran_speed
         else:
             self.speed = speed
@@ -183,6 +183,8 @@ class Pymon(Creature):
         pymon_player = self.get_name()
         pymon_enemy = target_creature.get_name()
 
+        print(self.speed)
+
         while not distance_self <= 0 and not distance_enemy <= 0:
             luck_player = Luck()
             sec_speed_player = luck_player.cal_sec_speed(self.speed)
@@ -204,7 +206,7 @@ class Pymon(Creature):
         if leader.get_name().lower() == pymon_player.lower():
             print(f"{pymon_player} (your Pymon) reached the finish line in {sec} seconds! You win!")
             return True
-        elif leader.get_name().lower() == target_creature.lower():
+        elif leader.get_name().lower() == pymon_enemy.lower():
             print(f"{pymon_enemy} (Opponent) reached the finish line in {sec} seconds! You lose!")
             return False
 
