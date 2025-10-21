@@ -12,14 +12,6 @@ class Record:
         self.list_location = []
         self.list_creature = []
 
-    # @property
-    # def list_location(self):
-    #     return self.list_location
-    
-    # @list_location.setter
-    # def list_location(self,new_list):
-    #     self.list_location = new_list
-
     def import_location(self,file_name=""):
         if file_name != "":
             self.file_location = file_name

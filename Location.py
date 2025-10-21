@@ -1,4 +1,5 @@
 from Error import DirectionException
+from Operation import Pymon
 
 class Location:
     def __init__(self, name = "New room", des="" ,w = None, n = None , e = None, s = None):
@@ -26,8 +27,33 @@ class Location:
         #please implement this method to by simply appending a creature to self.creatures list.
         
     def add_item(self, item):
-        pass
+        self.items.append(item)
         #please implement this method to by simply appending an item to self.items list.
+
+    def find_item(self,item_name):
+        search_item = None
+        for i in self.items:
+            if i.get_name().lower() == item_name.lower():
+                search_item = i
+        return search_item
+
+    def find_creature(self,creature_name="",find_pymon=False , is_random = False):
+        search_creature = None
+        random_index = 0
+        if is_random and len(self.creatures) > 0:
+            random_index = Operation.generate_random_number(len(self.creatures)-1)
+        for index , i in enumerate(self.creatures):
+            if is_random:
+                if index == random_index:
+                    search_creature = i
+            else:
+                if find_pymon:
+                    if isinstance(i,Pymon):
+                        search_creature = i
+                else: 
+                    if i.get_name().lower() == creature_name.lower():
+                        search_creature = i
+        return search_creature
 
     def get_connect_location(self,direction):
         if not direction in ["west","north","south","east"]:

@@ -1,5 +1,8 @@
-import Location
+from Location import Location , Operation
 from Error import DirectionException , NotFoundLocation
+from Item import Item
+from Luck import Luck
+import time
 
 class Creature:
     def __init__(self,name,location:Location=None,des=""):
@@ -26,12 +29,33 @@ class Creature:
     def display_info(self):
         print("")
 
+    def display_taunt(self):
+        if self.name.lower() == "sheep":
+            print("the sheep just ignored you")
+        elif self.name.lower() == "chicken":
+            print("the chicken just laughed at you")
+
 
 class Pymon(Creature):
     def __init__(self,name,location:Location=None,speed=0,energy=3,des=""):
         super().__init__(name,location,des)
         self.energy = energy
-        self.speed = speed       
+        if speed == 0:
+            ran_speed = Operation.generate_random_number(6 , min_number=1)
+            self.speed = ran_speed
+        else:
+            self.speed = speed
+        self.item_list = []
+
+    def add_item(self, item:Item):
+        self.item_list.append(item)    
+
+    def get_items(self,carry=False):
+        if carry:
+            return self.item_list[0]
+        else:
+            return self.item_list
+
 
     def move(self,direction):
         if not direction in ["west","north","south","east"]:
@@ -43,6 +67,41 @@ class Pymon(Creature):
             else:
                 self.current_location = new_location
     
+    def challenge_race(self,target_creature:Pymon):
+        sec = 0
+        distance_self = 100
+        distance_enemy = 100
+        leader = None
+
+        pymon_player = self.get_name()
+        pymon_enemy = target_creature.get_name()
+
+        while not distance_self <= 0 and not distance_enemy <= 0:
+            luck_player = Luck()
+            sec_speed_player = luck_player.cal_sec_speed(self.speed)
+            luck_enemy = Luck()
+            sec_speed_enemy = luck_enemy.cal_sec_speed(target_creature.speed)
+            distance_self -= sec_speed_player
+            distance_enemy -= sec_speed_enemy
+            message_at_sec = f"{pymon_player} (your Pymon) hopped {sec_speed_player} meters. Distance remaining for {distance_self}\n\
+                {pymon_enemy} (your Pymon) hopped {sec_speed_enemy} meters. Distance remaining for {distance_self}\n"
+            print(message_at_sec)
+            if distance_self < distance_enemy:
+                leader = self
+            elif distance_self > distance_enemy:
+                leader = target_creature
+            else:
+                leader = None
+            sec += 1
+            time.sleep(1)
+        
+        if leader.get_name().lower() == pymon_player.lower():
+            print(f"{pymon_player} (your Pymon) reached the finish line in {sec} seconds! You win!")
+            return True
+        elif leader.get_name().lower() == target_creature.lower():
+            print(f"{pymon_enemy} (Opponent) reached the finish line in {sec} seconds! You lose!")
+            return False
+
     def display_info(self):
         print(f"Hi Player, my name is {self.name}, I am {self.des}.\nMy energy level is {self.energy}/3.What can I do to help you?\n")
 
