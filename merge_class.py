@@ -57,11 +57,15 @@ class Location:
         #please implement this method to by simply appending a creature to self.creatures list.
     
     def remove_creature(self,removed_creature):
-        self.creatures.remove(removed_creature)
+        if removed_creature in self.creatures:
+            self.creatures.remove(removed_creature)
 
     def add_item(self, item):
         self.items.append(item)
         #please implement this method to by simply appending an item to self.items list.
+
+    def remove_item(self,item:Item):
+        self.items.remove(item)
 
     def find_item(self,item_name):
         search_item = None
@@ -107,6 +111,9 @@ class Location:
         self.doors["south"] = another_room 
         another_room.doors["north"]  = self
 
+    def display_info_by_direction(self,direction):
+        print("information for " + direction)
+
     def display_full_info(self):
         w = self.doors["west"].get_name() if self.doors["west"] else "Nope"
         n = self.doors["north"].get_name() if self.doors["north"] else "Nope"
@@ -122,9 +129,10 @@ class Creature:
         self.current_location = location
         self.des = des
 
-    def spawn(self, location:Location):
+    def spawn(self, location:Location , is_main=False):
         if location != None:
-            location.add_creature(self)
+            if not is_main:
+                location.add_creature(self)
             self.current_location = location
         else:
             raise NotFoundLocation(location)
@@ -160,34 +168,51 @@ class Pymon(Creature):
             self.speed = speed
         self.item_list = []
         self.move_attempt = 0
+        self.pogo_effect = False
+    
+    def get_pogo_effect(self):
+        return self.pogo_effect
+
+    def set_pogo_effect(self,new_effect:bool):
+        self.pogo_effect = new_effect
 
     def get_energy(self):
         return self.energy
 
     def use_move_attempt(self):
-        self.move_attempt += 2
+        self.move_attempt += 1
         if self.move_attempt == 2:
             self.drop_energy(1)
             print("You moved every 2 locations ,Pymons'energy is dropped 1 point")
             self.move_attempt = 0
 
     def add_energy(self,add_energy):
-        self.energy += add_energy
+        if self.energy + add_energy > 3:
+            self.energy = 3
+        else:
+            self.energy += add_energy
     
     def drop_energy(self,drop_energy):
         self.energy -= drop_energy
-        if self.energy == 0:
-            print("release to the wild")
-            pass
-
+    
     def add_item(self, item:Item):
-        self.item_list.append(item)    
+        self.item_list.append(item)
+        self.current_location.remove_item(item)
+
+    def drop_item(self,item:Item):
+        self.item_list.remove(item)
 
     def get_items(self,carry=False):
         if carry:
-            return self.item_list[0]
+            if len(self.item_list) > 0:
+                return self.item_list[0]
+            return None
         else:
             return self.item_list
+        
+    def use_item(self,item_index):
+        selected_item = self.item_list[item_index]
+        selected_item.activate_effect(self)
         
     def transfer_items(self,item_list):
         self.item_list += item_list
@@ -202,9 +227,6 @@ class Pymon(Creature):
             else:
                 self.current_location = new_location
                 return True
-        
-    def leave_location(self):
-        self.current_location.remove_creature(self)
 
     def challenge_race(self,target_creature:Pymon):
         sec = 0
@@ -218,6 +240,9 @@ class Pymon(Creature):
         while not distance_self <= 0 and not distance_enemy <= 0:
             luck_player = Luck()
             sec_speed_player = luck_player.cal_sec_speed(self.speed)
+            if self.get_pogo_effect():
+                print("Up speed by pogo stick effect")
+                sec_speed_player *= 2
             luck_enemy = Luck()
             sec_speed_enemy = luck_enemy.cal_sec_speed(target_creature.speed)
             distance_self -= sec_speed_player
@@ -228,30 +253,32 @@ class Pymon(Creature):
 
             message_at_sec = f"{pymon_player} (your Pymon) hopped {sec_speed_player:.2f} meters. Distance remaining for {display_distance_self:.2f}\n{pymon_enemy} (Opponent) hopped {sec_speed_enemy:.2f} meters. Distance remaining for {display_distance_enemy:.2f}\n"
             print(message_at_sec)
-            if distance_self < distance_enemy:
+            if display_distance_self < display_distance_enemy:
                 leader = self
-            elif distance_self > distance_enemy:
+            elif display_distance_self > display_distance_enemy:
                 leader = target_creature
             else:
                 leader = None
             sec += 1
             time.sleep(1)
-        
+
         if leader.get_name().lower() == pymon_player.lower():
             print(f"{pymon_player} (your Pymon) reached the finish line in {sec} seconds! You win!")
-            return True
+            return "win"
         elif leader.get_name().lower() == pymon_enemy.lower():
             print(f"{pymon_enemy} (Opponent) reached the finish line in {sec} seconds! You lose!")
-            return False
+            return "lose"
+        else:
+            print(f"{pymon_player} (your Pymon) and {pymon_enemy} (Opponent) reached the finish line in {sec} seconds at the same time! You draw!")
+            return "draw"
 
     def display_info(self):
-        print(f"Hi Player, my name is {self.name}, I am {self.des}.\nMy energy level is {self.energy}/3.What can I do to help you?\n")
+        print(f"\nHi Player, my name is {self.name}, I am {self.des}.\nMy energy level is {self.energy}/3.What can I do to help you?\n")
 
 class Item:
-    def __init__(self,name,effect=None,des=""):
+    def __init__(self,name,des=""):
         self.name = name
         self.des = des
-        self.effect = effect
     def get_name(self):
         return self.name
 
@@ -259,9 +286,58 @@ class InventoryItem(Item):
     def __init__(self, name, des=""):
         super().__init__(name, des)
 
-class ConsumeItem(Item):
-    def __init__(self, name, des=""):
+    def activate_effect(self,current_pymon:Pymon):
+        print("Activate Item Effect")
+
+class Pogostick(InventoryItem):
+    def __init__(self, name="pogo stick", des=""):
         super().__init__(name, des)
+    
+    def activate_effect(self,current_pymon:Pymon):
+        current_pogo_effect = current_pymon.get_pogo_effect()
+        if not current_pogo_effect:
+            # activate pogo effect
+            current_pymon.set_pogo_effect(True)
+            print("Pogo effect activate , now your speed is double")
+        else:
+            print("You're already using Pogo effect right now , it'll disappear after race")
+        
+    def distroy_after_match(self,current_pymon:Pymon):
+        current_pymon.set_pogo_effect(False)
+        current_pymon.drop_item(self)
+        print("Pogo stick is broken and disappear")
+
+class Binocular(InventoryItem):
+    def __init__(self, name="binocular" ,des=""):
+        super().__init__(name, des)
+    
+    def activate_effect(self,current_pymon:Pymon):
+        while True:
+            try:
+                current_loc = current_pymon.get_location()
+                input_direction = input("Enter direction that you want to check : ").strip()
+                if not input_direction.lower() in ["west","north","east","south"]:
+                    raise DirectionException(input_direction)
+                else:
+                    current_loc.display_info_by_direction(input_direction.lower())
+            except Exception as e:
+                print(e)
+        
+class ConsumeItem(Item):
+    def __init__(self, name, des="" , gain_power = 1):
+        super().__init__(name, des)
+        self.gain_power = gain_power
+
+    def get_gain_power(self):
+        return self.gain_power
+    
+    def activate_effect(self,current_pymon:Pymon):
+        if current_pymon.get_energy() < 3:
+            current_pymon.add_energy(self.get_gain_power())
+            current_pymon.drop_item(self)
+            print(f"\n{current_pymon.get_name()}s'energy gains {self.get_gain_power()} point , now energy = {current_pymon.get_energy()}/3\n")
+        else:
+            print(f'\nYour Pymon has max energy , don\'t need to eat\n')
 
 class Luck:
     def __init__(self):
@@ -377,27 +453,30 @@ class Operation:
     
     def release_to_wild(self):
         # remove released pymon from pat_list
-        self.current_pymon.leave_location()
-        self.pet_list.remove(self.current_pymon)
+        if self.current_pymon in self.pet_list:
+            print(f"{self.current_pymon.get_name()} ran out of energy , Released to the wild")
+            self.pet_list.remove(self.current_pymon)
+        
+        if len(self.pet_list) == 0:
+            self.is_over = True
 
         old_current_pymon = self.current_pymon
+        current_loc = old_current_pymon.get_location()
 
         # spawn random
         ran_loc_index = Operation.generate_random_number(max_number=(len(self.record.list_location)-1))
         old_current_pymon.spawn(self.record.list_location[ran_loc_index])
 
         # transfer item
-        self.current_pymon = self.pet_list[0]
-        self.current_pymon.transfer_items(old_current_pymon.get_items())
+        if len(self.pet_list) > 0:
+            self.current_pymon = self.pet_list[0]
+            self.current_pymon.spawn(current_loc)
+            self.current_pymon.transfer_items(old_current_pymon.get_items())
 
 
     def handle_menu(self):
-        while not (self.current_pymon.get_energy() <= 0 and len(self.pet_list) <= 0):
+        while not self.is_over:
             try:
-                # check stat pymon
-                if self.current_pymon.get_energy() <= 0:
-                    self.release_to_wild()
-
                 print("Please issue a command to your Pymon:")
                 print("1) Inspect Pymon")
                 print("2) Inspect current location")
@@ -412,11 +491,47 @@ class Operation:
                 input_option = input("Enter your option : ").strip()
                 if input_option == "1":
                     print("Your command: 1")
-                    self.current_pymon.display_info()
+                    while True:
+                        try:
+                            print("1) Inspect Current Pymon")
+                            print("2) List and select a benched Pymon to use")
+                            input_option = input("Enter your option : ").strip()
+                            if input_option == "1":
+                                self.current_pymon.display_info()
+                                break
+                            elif input_option == "2":
+                                if len(self.pet_list) <= 1:
+                                    for i in self.pet_list:
+                                        print(i.get_name())
+                                    print("\nYou only have one Pymon , cannot change pymon yet\n")
+                                    break
+                                else:
+                                    print("List Your Pymon")
+                                    for index,pet in enumerate(self.pet_list):
+                                        print(f'{index+1}) {pet.get_name()}')
+                                    pet_option = input("Enter pet number for current Pymon changing (press n to cancel) : ").strip()
+                                    if pet_option.lower() == "n":
+                                        print("\nCancel changing Pymon\n")
+                                        break
+                                    elif not int(pet_option) in range(1,len(self.pet_list)+1):
+                                        raise InputInvalid(pet_option,range(1,len(self.pet_list)+1))
+                                    else:
+                                        actual_index = int(pet_option) - 1 
+                                        current_loc = self.current_pymon.get_location()
+                                        self.current_pymon = self.pet_list[actual_index]
+                                        self.current_pymon.spawn(current_loc)
+                                        break
+                            else:
+                                raise InputInvalid(input_option,["1","2"])
+                        except ValueError:
+                            print("Please enter only positive integer number")
+                        except Exception as e:
+                            print(e)
                 elif input_option == "2":
-                    print("Your command: 2")
+                    print("Your command: 2")  
                     current_loc = self.current_pymon.get_location()
-                    print(f"You are at a {current_loc.get_name()},{current_loc.get_des()}\n")
+                    print(f"\nYou are at a {current_loc.get_name()},{current_loc.get_des()}\n")
+                        
                 elif input_option == "3":
                     print("Your command: 3")
                     while True:
@@ -428,11 +543,11 @@ class Operation:
                                 print(f'{input_direction} of {current_loc.get_name()} is a dead end , Your Pymon is still at {current_loc.get_name()}')
                             else:
                                 self.current_pymon.use_move_attempt()
+                                current_loc = self.current_pymon.get_location()
+                                print(f"You traveled {input_direction} and arrived at a {current_loc.get_name()}.")
                             break
                         except Exception as e:
                             print(e)
-                    current_loc = self.current_pymon.get_location()
-                    print(f"You traveled {input_direction} and arrived at a {current_loc.get_name()}.")
                 elif input_option == "4":
                     print("Your command: 4")
                     input_item = input("Picking what : ").strip()
@@ -445,8 +560,29 @@ class Operation:
                         print(f"You picked up an {picked_item.get_name()} from the ground")
                 elif input_option == "5":
                     print("Your command: 5")
-                    carry_item = self.current_pymon.get_items(carry=True)
-                    print(f"You are carrying : {carry_item.get_name()}")
+                    item_list = self.current_pymon.get_items()
+                    if len(item_list) == 0:
+                        print(f"\nYour Pymon don't have any item\n")
+                    else:
+                        print("Select Item to Use")
+                        while True:
+                            try:
+                                for index , item in enumerate(item_list):
+                                    print(f'{index+1}) {item.get_name()}')
+                                input_option = input("Enter item number (press n to cancel) : ").strip()
+                                if input_option.lower() == "n":
+                                    break
+                                elif not int(input_option) in range(1,len(item_list)+1):
+                                    raise InputInvalid(input_option,range(1,len(item_list)+1))
+                                else:
+                                    actual_index = int(input_option) - 1
+                                    self.current_pymon.use_item(actual_index)
+                                    print(f"\nYou are using : {item_list[actual_index].get_name()}\n")
+                                    break
+                            except ValueError:
+                                print("please enter positive integer number")
+                            except Exception as e:
+                                print(e)
                 elif input_option == "6":
                     print("Your command: 6")
                     current_loc = self.current_pymon.get_location()
@@ -460,20 +596,34 @@ class Operation:
                     else:
                         print("challenge start")
                         result = self.current_pymon.challenge_race(another_pymon)
-                        if result: # pytmon player win
-                            another_pymon.leave_location()
+                        if result == "draw":
+                            print(f'{self.current_pymon.get_name()} drew with {another_pymon.get_name()} , Nothing happen')
+                        elif result == "win": # pytmon player win
+                            c_loc = another_pymon.get_location()
+                            c_loc.remove_creature(another_pymon)
                             self.pet_list.append(another_pymon)
-                            print(f"You caught {another_pymon.get_name}.It's now in your pet list.")
+                            print(f"You caught {another_pymon.get_name()}.It's now in your pet list.")
                         else:
                             self.current_pymon.drop_energy(1)
                             print("Your Pymons'energy is decreased by 1 point.")
+                        
+                        if self.current_pymon.get_pogo_effect():
+                            for i in self.current_pymon.get_items():
+                                if isinstance(i,Pogostick):
+                                    i.distroy_after_match(self.current_pymon)
+                                    
                 elif input_option == "7":
                     print("Exit the game and save?")
                     break    
                 elif input_option == "8":
                     self.record.display_list_location()
+                elif input_option == "dead":
+                    self.current_pymon.drop_energy(3)
                 else:
-                    raise InputInvalid(input_option,[1,2,3,4])
+                    raise InputInvalid(input_option,[1,2,3,4,5,6,7,8])
+                
+                if self.current_pymon.get_energy() == 0:
+                    self.release_to_wild()
             except Exception as e:
                 print(e)
     
@@ -481,6 +631,7 @@ class Operation:
         self.record = None
         self.pet_list = []
         self.current_pymon = None
+        self.is_over = False
 
     def setup(self,location_file="",creature_file=""):
         self.record = Record()
@@ -502,13 +653,13 @@ class Operation:
         sheep = self.record.find_creature("sheep")
         marimon = self.record.find_creature("marimon")
 
-        playground_loc.add_creature(kitimon)
-        beach_loc.add_creature(sheep)
-        school_loc.add_creature(marimon)
+        kitimon.spawn(playground_loc)
+        sheep.spawn(beach_loc)
+        marimon.spawn(school_loc)
 
         apple = ConsumeItem("Apple")
-        pogo_stick = InventoryItem("pogo stick")
-        binocular = InventoryItem("binocular")
+        pogo_stick = Pogostick()
+        binocular = Binocular()
         tree = Item("tree")
 
         playground_loc.add_item(tree)
@@ -519,7 +670,7 @@ class Operation:
         if len(locations)>0:
             a_random_number = Operation.generate_random_number(len(locations)-1)
             spawned_loc = locations[a_random_number]
-            self.current_pymon.spawn(spawned_loc)
+            self.current_pymon.spawn(spawned_loc,is_main=True)
           
     def display_setup(self):
         for location in self.locations:
@@ -542,6 +693,8 @@ class Operation:
         else:
             print("Your pymon is nowhere")
         self.handle_menu()
+        if self.is_over:
+            print("Game Over")
 
 if __name__ == '__main__':
     operation = Operation()
