@@ -1,6 +1,4 @@
-import random
-
-r = random.uniform(20,50)
-
-print(r)
-print(type(r))
+a = [1,2,3]
+b = [3,4,5]
+a+=b
+print(a)

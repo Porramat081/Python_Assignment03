@@ -55,7 +55,10 @@ class Location:
     def add_creature(self, creature):
         self.creatures.append(creature)
         #please implement this method to by simply appending a creature to self.creatures list.
-        
+    
+    def remove_creature(self,removed_creature):
+        self.creatures.remove(removed_creature)
+
     def add_item(self, item):
         self.items.append(item)
         #please implement this method to by simply appending an item to self.items list.
@@ -143,6 +146,8 @@ class Creature:
             print("the sheep just ignored you")
         elif self.name.lower() == "chicken":
             print("the chicken just laughed at you")
+        else:
+            print(f'{self.name} just pity you')
 
 class Pymon(Creature):
     def __init__(self,name,location:Location=None,speed=0,energy=3,des=""):
@@ -154,6 +159,26 @@ class Pymon(Creature):
         else:
             self.speed = speed
         self.item_list = []
+        self.move_attempt = 0
+
+    def get_energy(self):
+        return self.energy
+
+    def use_move_attempt(self):
+        self.move_attempt += 2
+        if self.move_attempt == 2:
+            self.drop_energy(1)
+            print("You moved every 2 locations ,Pymons'energy is dropped 1 point")
+            self.move_attempt = 0
+
+    def add_energy(self,add_energy):
+        self.energy += add_energy
+    
+    def drop_energy(self,drop_energy):
+        self.energy -= drop_energy
+        if self.energy == 0:
+            print("release to the wild")
+            pass
 
     def add_item(self, item:Item):
         self.item_list.append(item)    
@@ -163,6 +188,9 @@ class Pymon(Creature):
             return self.item_list[0]
         else:
             return self.item_list
+        
+    def transfer_items(self,item_list):
+        self.item_list += item_list
 
     def move(self,direction):
         if not direction in ["west","north","south","east"]:
@@ -170,10 +198,14 @@ class Pymon(Creature):
         else:
             new_location = self.current_location.get_connect_location(direction)
             if not new_location:
-                raise NotFoundLocation(new_location,direction)
+                return False
             else:
                 self.current_location = new_location
-    
+                return True
+        
+    def leave_location(self):
+        self.current_location.remove_creature(self)
+
     def challenge_race(self,target_creature:Pymon):
         sec = 0
         distance_self = 100
@@ -183,8 +215,6 @@ class Pymon(Creature):
         pymon_player = self.get_name()
         pymon_enemy = target_creature.get_name()
 
-        print(self.speed)
-
         while not distance_self <= 0 and not distance_enemy <= 0:
             luck_player = Luck()
             sec_speed_player = luck_player.cal_sec_speed(self.speed)
@@ -192,7 +222,11 @@ class Pymon(Creature):
             sec_speed_enemy = luck_enemy.cal_sec_speed(target_creature.speed)
             distance_self -= sec_speed_player
             distance_enemy -= sec_speed_enemy
-            message_at_sec = f"{pymon_player} (your Pymon) hopped {sec_speed_player:.2f} meters. Distance remaining for {distance_self:.2f}\n{pymon_enemy} (Opponent) hopped {sec_speed_enemy:.2f} meters. Distance remaining for {distance_enemy:.2f}\n"
+
+            display_distance_self = 0 if distance_self <= 0 else distance_self
+            display_distance_enemy = 0 if distance_enemy <= 0 else distance_enemy
+
+            message_at_sec = f"{pymon_player} (your Pymon) hopped {sec_speed_player:.2f} meters. Distance remaining for {display_distance_self:.2f}\n{pymon_enemy} (Opponent) hopped {sec_speed_enemy:.2f} meters. Distance remaining for {display_distance_enemy:.2f}\n"
             print(message_at_sec)
             if distance_self < distance_enemy:
                 leader = self
@@ -307,7 +341,6 @@ class Record:
                 
                 self.update_list_creature(current_creature)
 
-
     def update_list_creature(self,creature:Creature):
         self.list_creature.append(creature)
 
@@ -341,10 +374,30 @@ class Operation:
             r = random.randint(min_number,max_number)
             return r 
         return 0
+    
+    def release_to_wild(self):
+        # remove released pymon from pat_list
+        self.current_pymon.leave_location()
+        self.pet_list.remove(self.current_pymon)
+
+        old_current_pymon = self.current_pymon
+
+        # spawn random
+        ran_loc_index = Operation.generate_random_number(max_number=(len(self.record.list_location)-1))
+        old_current_pymon.spawn(self.record.list_location[ran_loc_index])
+
+        # transfer item
+        self.current_pymon = self.pet_list[0]
+        self.current_pymon.transfer_items(old_current_pymon.get_items())
+
 
     def handle_menu(self):
-        while True:
+        while not (self.current_pymon.get_energy() <= 0 and len(self.pet_list) <= 0):
             try:
+                # check stat pymon
+                if self.current_pymon.get_energy() <= 0:
+                    self.release_to_wild()
+
                 print("Please issue a command to your Pymon:")
                 print("1) Inspect Pymon")
                 print("2) Inspect current location")
@@ -366,10 +419,18 @@ class Operation:
                     print(f"You are at a {current_loc.get_name()},{current_loc.get_des()}\n")
                 elif input_option == "3":
                     print("Your command: 3")
-                    input_direction = input("Moving to which direction?: ").strip()
-                    if not input_direction in ["west","north","south","east"]:
-                        raise DirectionException(input_direction)
-                    self.current_pymon.move(input_direction)
+                    while True:
+                        try:
+                            input_direction = input("Moving to which direction?: ").strip()
+                            result_move = self.current_pymon.move(input_direction)
+                            if not result_move:
+                                current_loc = self.current_pymon.get_location()
+                                print(f'{input_direction} of {current_loc.get_name()} is a dead end , Your Pymon is still at {current_loc.get_name()}')
+                            else:
+                                self.current_pymon.use_move_attempt()
+                            break
+                        except Exception as e:
+                            print(e)
                     current_loc = self.current_pymon.get_location()
                     print(f"You traveled {input_direction} and arrived at a {current_loc.get_name()}.")
                 elif input_option == "4":
@@ -399,8 +460,13 @@ class Operation:
                     else:
                         print("challenge start")
                         result = self.current_pymon.challenge_race(another_pymon)
-                        print(result)
-
+                        if result: # pytmon player win
+                            another_pymon.leave_location()
+                            self.pet_list.append(another_pymon)
+                            print(f"You caught {another_pymon.get_name}.It's now in your pet list.")
+                        else:
+                            self.current_pymon.drop_energy(1)
+                            print("Your Pymons'energy is decreased by 1 point.")
                 elif input_option == "7":
                     print("Exit the game and save?")
                     break    
