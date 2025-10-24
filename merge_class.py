@@ -165,7 +165,7 @@ class Pymon(Creature):
         super().__init__(name,location,des)
         self.energy = energy
         if speed == 0:
-            ran_speed = Operation.generate_random_number(max_number=5 , min_number=3)
+            ran_speed = Operation.generate_random_number(max_number=6 , min_number=5)
             self.speed = ran_speed
         else:
             self.speed = speed
@@ -481,7 +481,6 @@ class Operation:
         old_current_pymon.spawn(self.record.list_location[ran_loc_index])
 
         # transfer item
-
         old_item_list = self.current_pymon.get_items()
         
         if len(self.pet_list) > 0:
