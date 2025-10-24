@@ -46,6 +46,9 @@ class Location:
     def get_name(self):
         return self.name
 
+    def get_creature(self):
+        return self.creatures
+
     def get_des(self):
         return self.des
 
@@ -162,7 +165,7 @@ class Pymon(Creature):
         super().__init__(name,location,des)
         self.energy = energy
         if speed == 0:
-            ran_speed = Operation.generate_random_number(max_number=7 , min_number=1)
+            ran_speed = Operation.generate_random_number(max_number=7 , min_number=5)
             self.speed = ran_speed
         else:
             self.speed = speed
@@ -262,15 +265,16 @@ class Pymon(Creature):
             sec += 1
             time.sleep(1)
 
-        if leader.get_name().lower() == pymon_player.lower():
-            print(f"{pymon_player} (your Pymon) reached the finish line in {sec} seconds! You win!")
-            return "win"
-        elif leader.get_name().lower() == pymon_enemy.lower():
-            print(f"{pymon_enemy} (Opponent) reached the finish line in {sec} seconds! You lose!")
-            return "lose"
-        else:
+        if not leader:
             print(f"{pymon_player} (your Pymon) and {pymon_enemy} (Opponent) reached the finish line in {sec} seconds at the same time! You draw!")
             return "draw"
+        else:
+            if leader.get_name().lower() == pymon_player.lower():
+                print(f"{pymon_player} (your Pymon) reached the finish line in {sec} seconds! You win!")
+                return "win"
+            elif leader.get_name().lower() == pymon_enemy.lower():
+                print(f"{pymon_enemy} (Opponent) reached the finish line in {sec} seconds! You lose!")
+                return "lose"
 
     def display_info(self):
         print(f"\nHi Player, my name is {self.name}, I am {self.des}.\nMy energy level is {self.energy}/3.What can I do to help you?\n")
@@ -320,6 +324,7 @@ class Binocular(InventoryItem):
                     raise DirectionException(input_direction)
                 else:
                     current_loc.display_info_by_direction(input_direction.lower())
+                    break
             except Exception as e:
                 print(e)
         
@@ -358,6 +363,14 @@ class Record:
         self.file_creatures = "creatures.csv"
         self.list_location = []
         self.list_creature = []
+
+    def check_available_pymon(self):
+        for loc in self.list_location:
+            if len(loc.get_creature()) > 0:
+                for creature in loc.get_creature():
+                    if isinstance(creature,Pymon):
+                        return True
+        return False
 
     def import_location(self,file_name=""):
         if file_name != "":
@@ -519,7 +532,7 @@ class Operation:
                                         actual_index = int(pet_option) - 1 
                                         current_loc = self.current_pymon.get_location()
                                         self.current_pymon = self.pet_list[actual_index]
-                                        self.current_pymon.spawn(current_loc)
+                                        self.current_pymon.spawn(current_loc,is_main=True)
                                         break
                             else:
                                 raise InputInvalid(input_option,["1","2"])
@@ -576,8 +589,8 @@ class Operation:
                                     raise InputInvalid(input_option,range(1,len(item_list)+1))
                                 else:
                                     actual_index = int(input_option) - 1
-                                    self.current_pymon.use_item(actual_index)
                                     print(f"\nYou are using : {item_list[actual_index].get_name()}\n")
+                                    self.current_pymon.use_item(actual_index)
                                     break
                             except ValueError:
                                 print("please enter positive integer number")
@@ -607,6 +620,10 @@ class Operation:
                             self.current_pymon.drop_energy(1)
                             print("Your Pymons'energy is decreased by 1 point.")
                         
+                        if not self.record.check_available_pymon():
+                            print(f"You caught all pymon in this game , well done")
+                            self.is_over = True
+                            
                         if self.current_pymon.get_pogo_effect():
                             for i in self.current_pymon.get_items():
                                 if isinstance(i,Pogostick):
@@ -694,7 +711,10 @@ class Operation:
             print("Your pymon is nowhere")
         self.handle_menu()
         if self.is_over:
-            print("Game Over")
+            if not self.record.check_available_pymon():
+                print("Game Clear")
+            else:
+                print("Game Over")
 
 if __name__ == '__main__':
     operation = Operation()
