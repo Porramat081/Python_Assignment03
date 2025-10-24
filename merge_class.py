@@ -165,7 +165,7 @@ class Pymon(Creature):
         super().__init__(name,location,des)
         self.energy = energy
         if speed == 0:
-            ran_speed = Operation.generate_random_number(max_number=7 , min_number=5)
+            ran_speed = Operation.generate_random_number(max_number=5 , min_number=3)
             self.speed = ran_speed
         else:
             self.speed = speed
@@ -473,18 +473,21 @@ class Operation:
         if len(self.pet_list) == 0:
             self.is_over = True
 
-        old_current_pymon = self.current_pymon
-        current_loc = old_current_pymon.get_location()
-
+        current_loc = self.current_pymon.get_location()
+        old_current_pymon = Pymon(name=self.current_pymon.get_name(),des=self.current_pymon.get_des())
+        
         # spawn random
         ran_loc_index = Operation.generate_random_number(max_number=(len(self.record.list_location)-1))
         old_current_pymon.spawn(self.record.list_location[ran_loc_index])
 
         # transfer item
+
+        old_item_list = self.current_pymon.get_items()
+        
         if len(self.pet_list) > 0:
             self.current_pymon = self.pet_list[0]
-            self.current_pymon.spawn(current_loc)
-            self.current_pymon.transfer_items(old_current_pymon.get_items())
+            self.current_pymon.spawn(current_loc,True)
+            self.current_pymon.transfer_items(old_item_list)
 
 
     def handle_menu(self):
