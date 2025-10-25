@@ -46,8 +46,36 @@ class Location:
     def get_name(self):
         return self.name
 
-    def get_creature(self):
+    def get_creature(self , des=False):
+        if des:
+            des_creature = ""
+            is_have_pymon = False
+            for i in self.creatures:
+                if not isinstance(i,Pymon):
+                    des_creature += f'a {i.get_name()}, '
+                else:
+                    is_have_pymon = True
+            if is_have_pymon:
+                des_creature += "another Pymon. "
+            
+            if des_creature != "":
+                des_creature = f"This place has " + des_creature
+            else:
+                des_creature = "There's no other creature"
+            return des_creature
         return self.creatures
+    
+    def get_items(self , des = False):
+        if des:
+            des_item = ""
+            for i in self.items:
+                des_item += f' {i.get_name()}, '
+            if des_item != "":
+                des_item = "This place has " + des_item
+            else:
+                des_item = "There's no item"
+            return des_item
+        return self.items
 
     def get_des(self):
         return self.des
@@ -114,8 +142,33 @@ class Location:
         self.doors["south"] = another_room 
         another_room.doors["north"]  = self
 
+    def display_info_one_location(self,location:Location , direction):
+        if not location:
+            print("This direction leads nowhere")
+        else:
+            init_string = location.get_creature(des=True)+location.get_items(des=True)
+            if direction != "current":
+                init_string = "In the " + direction+" , " + init_string
+            else:
+                w = self.doors["west"]
+                n = self.doors["north"]
+                s = self.doors["south"]
+                e = self.doors["east"]
+                if w:
+                    init_string += " , In the west is a " + w.get_name()
+                if n:
+                    init_string += " , In the north is a " + n.get_name()
+                if s:
+                    init_string += " , In the south is a " + s.get_name()
+                if e:
+                    init_string += " , In the east is a " + e.get_name()
+            print(init_string)
+
     def display_info_by_direction(self,direction):
-        print("information for " + direction)
+        target_loc = self
+        if direction != "current":
+            target_loc = self.doors[direction]
+        self.display_info_one_location(target_loc,direction)
 
     def display_full_info(self):
         w = self.doors["west"].get_name() if self.doors["west"] else "Nope"
@@ -221,6 +274,7 @@ class Pymon(Creature):
         self.item_list += item_list
 
     def move(self,direction):
+        direction = direction.lower()
         if not direction in ["west","north","south","east"]:
             raise DirectionException(direction)
         else:
@@ -319,12 +373,14 @@ class Binocular(InventoryItem):
         while True:
             try:
                 current_loc = current_pymon.get_location()
-                input_direction = input("Enter direction that you want to check : ").strip()
-                if not input_direction.lower() in ["west","north","east","south"]:
+                input_direction = input("Enter direction that you want to check (press n to cancel) : ").strip()
+                input_direction = input_direction.lower()
+                if input_direction == "n":
+                    break
+                elif not input_direction in ["current","west","north","east","south"]:
                     raise DirectionException(input_direction)
                 else:
                     current_loc.display_info_by_direction(input_direction.lower())
-                    break
             except Exception as e:
                 print(e)
         
@@ -545,8 +601,7 @@ class Operation:
                 elif input_option == "2":
                     print("Your command: 2")  
                     current_loc = self.current_pymon.get_location()
-                    print(f"\nYou are at a {current_loc.get_name()},{current_loc.get_des()}\n")
-                        
+                    print(f"\nYou are at a {current_loc.get_name()},{current_loc.get_des()}\n")   
                 elif input_option == "3":
                     print("Your command: 3")
                     while True:
