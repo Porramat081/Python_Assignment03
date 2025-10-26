@@ -348,7 +348,7 @@ class InventoryItem(Item):
         print("Activate Item Effect")
 
 class Pogostick(InventoryItem):
-    def __init__(self, name="pogo stick", des=""):
+    def __init__(self, name="pogo", des=""):
         super().__init__(name, des)
     
     def activate_effect(self,current_pymon:Pymon):
@@ -417,8 +417,18 @@ class Record:
     def __init__(self):
         self.file_location = "locations.csv"
         self.file_creatures = "creatures.csv"
+        self.file_items = "items.csv"
         self.list_location = []
         self.list_creature = []
+        self.list_item = []
+
+    def get_list(self,key=""):
+        if key == "location":
+            return self.list_location
+        elif key == "creature":
+            return self.list_creature
+        elif key == "item":
+            return self.list_item
 
     def check_available_pymon(self):
         for loc in self.list_location:
@@ -485,6 +495,39 @@ class Record:
                     current_creature = Creature(c_name,des=c_des)
                 
                 self.update_list_creature(current_creature)
+    
+    def import_item(self,file_name=""):
+        if file_name != "":
+            self.file_items = file_name
+        if not op.exists(self.file_items):
+            raise FileNotFound(self.file_items)
+        with open(self.file_items,"r",encoding='utf-8-sig') as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)
+            for row in reader:
+                current_item = None
+                i_name = row[0].lower().strip()
+                i_des = row[1].lower().strip()
+                i_pick = row[2].lower().strip()
+                i_con = row[3].lower().strip()
+                if i_pick == "yes":
+                    if i_con == "yes":
+                        current_item = ConsumeItem(name=i_name , des=i_des)
+                    elif i_con == "no":
+                        if i_name == "pogo":
+                            current_item = Pogostick(name=i_name,des=i_des)
+                        elif i_name == "binocular":
+                            current_item = Binocular(name=i_name,des=i_des)
+                        else:
+                            current_item = InventoryItem(name=i_name , des=i_des)
+                elif i_pick == "no":
+                    current_item = Item(name=i_name,des=i_des)
+                
+                self.update_list_item(current_item)
+                
+
+    def update_list_item(self,item:Item):
+        self.list_item.append(item)
 
     def update_list_creature(self,creature:Creature):
         self.list_creature.append(creature)
@@ -509,7 +552,6 @@ class Record:
 
 class Operation:
 
-    #you may use, extend and modify the following random generator
     @staticmethod
     def generate_random_number(max_number = 1 , min_number = 0 , is_float = False):
         if is_float:
@@ -543,7 +585,6 @@ class Operation:
             self.current_pymon = self.pet_list[0]
             self.current_pymon.spawn(current_loc,True)
             self.current_pymon.transfer_items(old_item_list)
-
 
     def handle_menu(self):
         while not self.is_over:
@@ -707,44 +748,35 @@ class Operation:
         self.current_pymon = None
         self.is_over = False
 
-    def setup(self,location_file="",creature_file=""):
+    def setup(self,location_file="",creature_file="",item_file=""):
         self.record = Record()
         self.record.import_location()
         self.record.import_creature()
+        self.record.import_item()
         self.record.init_connection()
-        locations = self.record.list_location
+        locations = self.record.get_list(key="location")
+        creatures = self.record.get_list(key="creature")
+        items = self.record.get_list(key="item")
 
         # new game
         current_pymon = Pymon("Toromon",des="white and yellow Pymon with a square face")
         self.pet_list.append(current_pymon)
         self.current_pymon = self.pet_list[0]
 
-        school_loc = self.record.find_location("school")
-        playground_loc = self.record.find_location("playground")
-        beach_loc = self.record.find_location("beach")
-
-        kitimon = self.record.find_creature("kitimon")
-        sheep = self.record.find_creature("sheep")
-        marimon = self.record.find_creature("marimon")
-
-        kitimon.spawn(playground_loc)
-        sheep.spawn(beach_loc)
-        marimon.spawn(school_loc)
-
-        apple = ConsumeItem("Apple")
-        pogo_stick = Pogostick()
-        binocular = Binocular()
-        tree = Item("tree")
-
-        playground_loc.add_item(tree)
-        playground_loc.add_item(pogo_stick)
-        beach_loc.add_item(binocular)
-        school_loc.add_item(apple)
-
         if len(locations)>0:
             a_random_number = Operation.generate_random_number(len(locations)-1)
             spawned_loc = locations[a_random_number]
             self.current_pymon.spawn(spawned_loc,is_main=True)
+
+            # random spawn creature
+            for creature in creatures:
+                ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
+                creature.spawn(locations[ran_index])
+
+            # random add item
+            for item in items:
+                ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
+                locations[ran_index].add_item(item)
           
     def display_setup(self):
         for location in self.locations:
