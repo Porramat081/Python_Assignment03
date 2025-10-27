@@ -2,6 +2,7 @@ import time
 import csv
 import os.path as op
 import random
+from datetime import datetime
 
 class DirectionException(Exception):
     def __init__(self,direction):
@@ -413,6 +414,31 @@ class Luck:
     def cal_sec_speed(self, initial_speed):
         return float(initial_speed) + ((self.percentage/100 )* float(initial_speed))
 
+class RaceStat:
+    def __init__(self,pymon_name,result,opponent_name):
+        self.pymon_name = pymon_name
+        self.result = result
+        self.time_stamp = datetime.now()
+        self.opponent_name = opponent_name
+
+    def get_pymon_name(self):
+        return self.pymon_name
+    
+    def get_tuple_format(self):
+        return (self.result,self.time_stamp,self.opponent_name)
+    
+    @staticmethod
+    def get_format_dict(race_stat_list):
+        pymon_dict = {}
+        for race in race_stat_list:
+            pymon_name = race.get_pymon_name()
+            race_tuple = race.get_tuple_format()
+            if not pymon_name in pymon_dict:
+                pymon_dict[pymon_name] = [race_tuple]
+            else:
+                pymon_dict[pymon_name].append(race_tuple)
+        return pymon_dict
+    
 class Record:
     def __init__(self):
         self.file_location = "locations.csv"
@@ -421,6 +447,23 @@ class Record:
         self.list_location = []
         self.list_creature = []
         self.list_item = []
+        self.list_stat = []
+
+    def gen_stats(self):
+        if len(self.list_stat) == 0:
+            raise Exception("No race stat")
+        list_format = RaceStat.get_format_dict(self.list_stat)
+        display_string = ""
+        for race_stat in list(list_format.items()):
+            display_string += f'Pymon Nickname : "{race_stat[0]}"\n'
+            for index , item in enumerate(race_stat[1]):
+                time_format = item[1].strftime("%d/%m/%Y %H:%M %p")
+                display_string += f'Race {index + 1} , {time_format} , Opponent : "{item[2]}" , {item[0]}\n'
+        return display_string
+
+    def record_race_stat(self,pymon_name,result,another_name):
+        new_record = RaceStat(pymon_name,result,another_name)
+        self.list_stat.append(new_record)
 
     def get_list(self,key=""):
         if key == "location":
@@ -481,7 +524,7 @@ class Record:
             raise FileNotFound(self.file_creatures)
         with open(self.file_creatures,"r",encoding='utf-8-sig') as csvfile:
             reader = csv.reader(csvfile)
-            next(reader)  # Skip the header row
+            next(reader)
             for row in reader:
                 c_name = row[0].strip()
                 c_des = row[1].strip()
@@ -596,7 +639,8 @@ class Operation:
                 print("4) Pick an item")
                 print("5) View inventory")
                 print("6) Challenge a creature")
-                print("7) Exit the program")
+                print("7) Generate stats")
+                print("8) Exit the program")
                 print("8) List location")
                 print("9) List creatures")
 
@@ -717,6 +761,8 @@ class Operation:
                         else:
                             self.current_pymon.drop_energy(1)
                             print("Your Pymons'energy is decreased by 1 point.")
+
+                        self.record.record_race_stat(self.current_pymon.get_name(),result,another_pymon.get_name())
                         
                         if not self.record.check_available_pymon():
                             print(f"You caught all pymon in this game , well done")
@@ -726,14 +772,19 @@ class Operation:
                             for i in self.current_pymon.get_items():
                                 if isinstance(i,Pogostick):
                                     i.distroy_after_match(self.current_pymon)
-                                    
+
                 elif input_option == "7":
+                    print("Generate Stats")
+                    stat = self.record.gen_stats()
+                    with open("race_stats.txt", "w", encoding="utf-8") as f:
+                        f.write(stat)
+                    print(stat)  
+                    
+                elif input_option == "8":
                     print("Exit the game and save?")
                     break    
-                elif input_option == "8":
+                elif input_option == "9":
                     self.record.display_list_location()
-                elif input_option == "dead":
-                    self.current_pymon.drop_energy(3)
                 else:
                     raise InputInvalid(input_option,[1,2,3,4,5,6,7,8])
                 
