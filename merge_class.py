@@ -3,6 +3,7 @@ import csv
 import os
 import os.path as op
 import random
+import sys
 from datetime import datetime
 
 class DirectionException(Exception):
@@ -939,9 +940,9 @@ class Operation:
 
     def setup(self,location_file="",creature_file="",item_file=""):
         self.record = Record()
-        self.record.import_location()
-        self.record.import_creature()
-        self.record.import_item()
+        self.record.import_location(file_name=location_file)
+        self.record.import_creature(file_name=creature_file)
+        self.record.import_item(file_name=item_file)
         self.record.init_connection()
         locations = self.record.get_list(key="location")
         creatures = self.record.get_list(key="creature")
@@ -1051,17 +1052,22 @@ class Operation:
 if __name__ == '__main__':
     operation = Operation()
     try:
-        # for i in range(1, len(sys.argv)):
-        #     if sys.argv[i] == '-o' and i + 1 < len(sys.argv):
-        #         orders_file = sys.argv[i + 1]
-        #     elif sys.argv[i] == '-g' and i + 1 < len(sys.argv):
-        #         guests_file = sys.argv[i + 1]
-        #     elif sys.argv[i] == '-p' and i + 1 < len(sys.argv):
-        #         products_file = sys.argv[i + 1]
-        #     elif not sys.argv[i] in ["-o","-g","-p"] and sys.argv[i].startswith("-"):
-        #         print("This program have no ",sys.argv[i]," there's only -g for guest_file , -p for product_file , -o for order_file")
+        location_file = ""
+        creature_file = ""
+        item_file = ""
+        
+        if len(sys.argv) > 4:
+            raise Exception("Argument out of range , please enter in this format (location.csv creature.csv item.csv)")
 
-        operation.setup()
+        for i in range(1,len(sys.argv)):
+            if i == 1:
+                location_file = sys.argv[1]
+            elif i == 2:
+                creature_file = sys.argv[2]
+            elif i == 3:
+                item_file = sys.argv[3]
+
+        operation.setup(location_file=location_file,creature_file=creature_file,item_file=item_file)
         operation.start_game()
     except Exception as e:
         print(e)

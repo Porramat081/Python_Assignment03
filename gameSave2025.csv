@@ -1,8 +1,8 @@
 name,location,type,energy,inventory
 Marimon,Beach,pymon,2,
+Toromon,Beach,pymon,3,
 Kitimon,Cave,pymon,0,
 Sheep,Forrest,creature,0,
 Gumimon,Cave,pymon,0,
 Pumamon,Beach,pymon,0,
 Chicken,Beach,creature,0,
-Toromon,Beach,pymon,0,
