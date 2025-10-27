@@ -1,5 +1,6 @@
 import time
 import csv
+import os
 import os.path as op
 import random
 from datetime import datetime
@@ -97,7 +98,8 @@ class Location:
         #please implement this method to by simply appending an item to self.items list.
 
     def remove_item(self,item:Item):
-        self.items.remove(item)
+        if item in self.items:
+            self.items.remove(item)
 
     def find_item(self,item_name):
         search_item = None
@@ -235,6 +237,9 @@ class Pymon(Creature):
 
     def get_energy(self):
         return self.energy
+    
+    def set_energy(self,energy):
+        self.energy = energy
 
     def use_move_attempt(self):
         self.move_attempt += 1
@@ -439,6 +444,82 @@ class RaceStat:
                 pymon_dict[pymon_name].append(race_tuple)
         return pymon_dict
     
+class SaveFile:
+    def __init__(self,file_name):
+        pass
+
+    @staticmethod
+    def search_save():
+        save_list = []
+        for i in os.listdir():
+            if i.lower().startswith("gamesave") and i.lower().endswith(".csv"):
+                save_list.append(i)
+        return save_list
+    
+    @staticmethod
+    def load_save_data(save_path):
+        print(save_path)
+    
+        current_pymon = None
+        list_pet = []
+        list_other = []
+
+        with open(save_path , "r" , encoding="utf-8") as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)  # Skip the header row
+        
+            for row in reader:
+            
+                pymon_name = row[0].strip()
+                pymon_loc_name = row[1].strip()
+                pymon_type = row[2].strip()
+                pymon_energy = row[3].strip()
+                pymon_inventory_arr  = row[4].split(",")
+
+                if pymon_energy and int(pymon_energy) > 0:
+
+                    current_pymon = (pymon_name,pymon_loc_name,pymon_type,pymon_energy,pymon_inventory_arr)
+                    list_pet.append(current_pymon)
+                else:
+                    other_creature = (pymon_name,pymon_loc_name,pymon_type)
+                    list_other.append(other_creature)
+          
+            
+        return list_pet , list_other
+                
+    @staticmethod
+    def gen_save_pet_data(current_pet , other_list):
+        current_item = ""
+        for index , item in enumerate(current_pet.get_items()):
+            current_item += item.get_name()
+            if index != (len(current_pet.get_items())-1):
+                current_item += ","
+        data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_pet.get_location().get_name() ,"pymon", current_pet.get_energy() , current_item]]
+        for other in other_list:
+            if other.get_name() == current_pet.get_name():
+                continue
+            other_item = ""
+            for index , item in enumerate(other.get_items()):
+                other_item += item.get_name()
+                if index != (len(current_pet.get_items())-1):
+                    other_item += ","
+            new_data = [other.get_name() , other.get_location().get_name() , "pymon",other.get_energy() , other_item]
+            data.append(new_data)
+        return data
+        
+    @staticmethod
+    def gen_save_other_data(list_other_creature , own_list):
+        data = []
+        for i in list_other_creature:
+            if i in own_list:
+                continue
+            i_type = "creature"
+            if isinstance(i,Pymon):
+                i_type = "pymon"
+            new_data = [i.get_name(),i.get_location().get_name(),i_type,0,""]
+            data.append(new_data)
+        return data
+
 class Record:
     def __init__(self):
         self.file_location = "locations.csv"
@@ -449,6 +530,14 @@ class Record:
         self.list_item = []
         self.list_stat = []
 
+    def random_pymon(self):
+        pymon_arr = []
+        for i in self.list_creature:
+            if isinstance(i,Pymon):
+                pymon_arr.append(i)
+        ran_int = Operation.generate_random_number(min_number=0,max_number=len(pymon_arr)-1)
+        return pymon_arr[ran_int]
+
     def gen_stats(self):
         if len(self.list_stat) == 0:
             raise Exception("No race stat")
@@ -456,9 +545,19 @@ class Record:
         display_string = ""
         for race_stat in list(list_format.items()):
             display_string += f'Pymon Nickname : "{race_stat[0]}"\n'
+            win_count = 0
+            lose_count = 0
+            draw_count = 0
             for index , item in enumerate(race_stat[1]):
                 time_format = item[1].strftime("%d/%m/%Y %H:%M %p")
                 display_string += f'Race {index + 1} , {time_format} , Opponent : "{item[2]}" , {item[0]}\n'
+                if item[0] == "win":
+                    win_count += 1
+                elif item[0] == "lose":
+                    lose_count += 1
+                elif item[0] == "draw":
+                    draw_count += 1
+            display_string += f'Total: W: {win_count} L: {lose_count} D: {draw_count}\n'
         return display_string
 
     def record_race_stat(self,pymon_name,result,another_name):
@@ -568,12 +667,18 @@ class Record:
                 
                 self.update_list_item(current_item)
                 
+    def update_list_item(self,item:Item , is_remove=False):
+        if not is_remove:
+            self.list_item.append(item)
+        else:
+            pass
 
-    def update_list_item(self,item:Item):
-        self.list_item.append(item)
-
-    def update_list_creature(self,creature:Creature):
-        self.list_creature.append(creature)
+    def update_list_creature(self,creature:Creature , is_remove=False):
+        if not is_remove:
+            self.list_creature.append(creature)
+        else:
+            target_creature = self.find_creature(creature_name=creature.get_name())
+            self.list_creature.remove(target_creature)
 
     def find_location(self,loc_name):
         search_loc = None
@@ -582,12 +687,21 @@ class Record:
                 search_loc = i
         return search_loc
     
-    def find_creature(self,creature_name):
+    def find_creature(self,creature_name , on_load = False):
         search_creature = None
         for i in self.list_creature:
             if i.get_name().lower() == creature_name.lower():
                 search_creature = i
+        if not search_creature and on_load and creature_name.lower() == "toromon":
+            search_creature = Pymon("Toromon",des="white and yellow Pymon with a square face")
         return search_creature
+    
+    def find_item(self,item_name):
+        search_item = None
+        for i in self.list_item:
+            if i.get_name().lower() == item_name.lower():
+                search_item = i
+        return search_item
 
     def display_list_location(self):
         for i in self.list_location:
@@ -782,7 +896,22 @@ class Operation:
                     
                 elif input_option == "8":
                     print("Exit the game and save?")
-                    break    
+                    save_option = input("Do you want to save game?(y:n) ").strip()
+                    if not save_option.lower() in ["y","n"]:
+                        raise InputInvalid(save_option,["y","n"])
+                    else:
+                        if save_option.lower() == "y":
+                            print("Create New Save")
+                            this_year = datetime.now().year
+                            path_name = "gameSave"+str(this_year)+".csv"
+
+                            with open(path_name,"w", newline='') as csv_pet_pymon:
+                                data1 = SaveFile.gen_save_pet_data(self.current_pymon,self.pet_list)
+                                own_list = self.pet_list
+                                data2 = SaveFile.gen_save_other_data(self.record.get_list(key="creature") , own_list)
+                                csv_writer = csv.writer(csv_pet_pymon)
+                                csv_writer.writerows(data1+data2)
+                        break    
                 elif input_option == "9":
                     self.record.display_list_location()
                 else:
@@ -809,25 +938,79 @@ class Operation:
         creatures = self.record.get_list(key="creature")
         items = self.record.get_list(key="item")
 
-        # new game
-        current_pymon = Pymon("Toromon",des="white and yellow Pymon with a square face")
-        self.pet_list.append(current_pymon)
-        self.current_pymon = self.pet_list[0]
+        save_file = SaveFile.search_save()
+        is_load = True
 
-        if len(locations)>0:
-            a_random_number = Operation.generate_random_number(len(locations)-1)
-            spawned_loc = locations[a_random_number]
-            self.current_pymon.spawn(spawned_loc,is_main=True)
+        list_pet_load = []
+        list_other_load = []
 
-            # random spawn creature
-            for creature in creatures:
-                ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
-                creature.spawn(locations[ran_index])
+        if len(save_file) > 0:
+            load_option = input("You have save file , Do you want to load game from save? (y/n) : ").strip()
+            if not load_option.lower() in ["y",'n']:
+                raise InputInvalid(load_option , ["y","n"])
+            else:
+                if load_option.lower() == "y":
+                    list_load = SaveFile.load_save_data(save_file[0])
+                    list_other_load = list_load[1]
+                    list_pet_load = list_load[0]
+                    for i in list_pet_load:
+                        search_pet = self.record.find_creature(i[0].strip())
+                        search_loc = self.record.find_location(i[1].strip())
+                        if (not search_loc or not search_pet) and (i[0].lower().strip() != 'toromon'):
+                            is_load = False
+                    for j in list_other_load:
+                        search_pet = self.record.find_creature(j[0].strip())
+                        search_loc = self.record.find_location(j[1].strip())
+                        if (not search_loc or not search_pet) and (j[0].lower().strip() != 'toromon'):
+                            is_load = False
+                    if not is_load:
+                         print("Incomplete Loading , because loading data and csv file mismatch")
+                elif load_option.lower() == "n":
+                    is_load = False
+        else:
+            is_load = False
 
-            # random add item
-            for item in items:
-                ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
-                locations[ran_index].add_item(item)
+        if is_load:
+            current_loc = self.record.find_location(list_pet_load[0][1].strip())
+            for i in list_pet_load:
+                search_pet = self.record.find_creature(i[0].strip(),on_load=True)
+                search_pet.set_energy(int(i[3]))
+                for item in i[4]:
+                    search_item = self.record.find_item(item.strip())
+                    if search_item:
+                        search_pet.add_item(search_item)
+                self.pet_list.append(search_pet)
+            self.current_pymon = self.pet_list[0]
+            self.current_pymon.spawn(current_loc,is_main=True)
+            for j in list_other_load:
+                search_creature = self.record.find_creature(j[0].strip(),on_load=True)
+                search_loc_creature = self.record.find_location(j[1].strip())
+                search_creature.spawn(search_loc_creature)
+                
+        else:
+            # new game - init pymon 
+            current_pymon = Pymon("Toromon",des="white and yellow Pymon with a square face")
+            self.pet_list.append(current_pymon)
+            self.current_pymon = self.pet_list[0]
+            # add Toromon to list in case new game
+            self.record.update_list_creature(current_pymon)
+
+            if len(locations)>0:
+                a_random_number = Operation.generate_random_number(len(locations)-1)
+                spawned_loc = locations[a_random_number]
+                self.current_pymon.spawn(spawned_loc,is_main=True)
+
+                # random spawn creature
+                for creature in creatures:
+                    if creature.get_name() == current_pymon.get_name():
+                        continue
+                    ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
+                    creature.spawn(locations[ran_index])
+
+        # random add item
+        for item in items:
+            ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
+            locations[ran_index].add_item(item)
           
     def display_setup(self):
         for location in self.locations:

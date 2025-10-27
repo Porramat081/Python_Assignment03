@@ -1,6 +1,7 @@
-pymon = {}
+def test():
+    return [1] , [2]
 
-if not pymon["to"]:
-    pymon["to"] = [(1,1)]
-else:
-    pymon["to"].append((2,2))
+list_1 , list_2 = test()
+
+print(list_1)
+print(list_2)

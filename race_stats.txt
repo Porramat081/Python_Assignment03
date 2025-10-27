@@ -1,2 +1,4 @@
 Pymon Nickname : "Toromon"
-Race 1 , 27/10/2025 12:26 Monday , Opponent : "Marimon" , win
+Race 1 , 27/10/2025 20:10 PM , Opponent : "Marimon" , lose
+Race 2 , 27/10/2025 20:11 PM , Opponent : "Marimon" , draw
+Total: W: 0 L: 1 D: 1
