@@ -490,21 +490,29 @@ class SaveFile:
     @staticmethod
     def gen_save_pet_data(current_pet , other_list):
         current_item = ""
+        current_location = current_pet.get_location().get_name()
         for index , item in enumerate(current_pet.get_items()):
             current_item += item.get_name()
             if index != (len(current_pet.get_items())-1):
                 current_item += ","
-        data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_pet.get_location().get_name() ,"pymon", current_pet.get_energy() , current_item]]
+        data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_location ,"pymon", current_pet.get_energy() , current_item]]
+   
         for other in other_list:
+           
             if other.get_name() == current_pet.get_name():
                 continue
             other_item = ""
-            for index , item in enumerate(other.get_items()):
-                other_item += item.get_name()
-                if index != (len(current_pet.get_items())-1):
-                    other_item += ","
-            new_data = [other.get_name() , other.get_location().get_name() , "pymon",other.get_energy() , other_item]
+       
+            if len(other.get_items()) > 0:
+                for index , item in enumerate(other.get_items()):
+                    other_item += item.get_name()
+                    if index != (len(current_pet.get_items())-1):
+                        other_item += ","
+
+            new_data = [other.get_name() , current_location , "pymon",other.get_energy() , other_item]
+        
             data.append(new_data)
+        
         return data
         
     @staticmethod
@@ -694,6 +702,7 @@ class Record:
                 search_creature = i
         if not search_creature and on_load and creature_name.lower() == "toromon":
             search_creature = Pymon("Toromon",des="white and yellow Pymon with a square face")
+            self.list_creature.append(search_creature)
         return search_creature
     
     def find_item(self,item_name):
@@ -740,7 +749,7 @@ class Operation:
         
         if len(self.pet_list) > 0:
             self.current_pymon = self.pet_list[0]
-            self.current_pymon.spawn(current_loc,True)
+            self.current_pymon.spawn(current_loc,is_main=True)
             self.current_pymon.transfer_items(old_item_list)
 
     def handle_menu(self):
