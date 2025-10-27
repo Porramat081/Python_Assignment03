@@ -31,6 +31,17 @@ class InputInvalid(Exception):
         message = f'{input} not in available options [{result_string}] , please try again'
         super().__init__(message)
 
+class LocationCustomException(Exception):
+    def __init__(self,option):
+        message = ""
+        if option=="format_len":
+            message = f"Invalid format , please enter in format (location name , location description , location west connect , location north connect , location east connect , location south connect) , please try again"
+        elif option == "data_type":
+            message = f"Invalid data type , please enter only string data type"
+        super().__init__(message)
+
+
+
 class Location:
     def __init__(self, name = "New room", des="" ,w = None, n = None , e = None, s = None):
         self.name = name
@@ -539,14 +550,6 @@ class Record:
         self.list_item = []
         self.list_stat = []
 
-    def random_pymon(self):
-        pymon_arr = []
-        for i in self.list_creature:
-            if isinstance(i,Pymon):
-                pymon_arr.append(i)
-        ran_int = Operation.generate_random_number(min_number=0,max_number=len(pymon_arr)-1)
-        return pymon_arr[ran_int]
-
     def gen_stats(self):
         if len(self.list_stat) == 0:
             raise Exception("No race stat")
@@ -609,7 +612,8 @@ class Record:
                 current_loc = Location(loc_name,loc_des,loc_w,loc_n,loc_e,loc_s)
                 self.list_location.append(current_loc)
                
-    def init_connection(self):
+    def init_connection(self , make_random=False):
+
         for i in self.list_location:
             doors = i.get_doors()
             if doors["east"] and not isinstance(doors["east"], Location):
@@ -624,6 +628,33 @@ class Record:
             if doors["south"] and not isinstance(doors["south"], Location):
                 loc_s = self.find_location(doors["south"])
                 i.connect_south(loc_s)
+
+    def get_ran_location(self):
+        ran_in = Operation.generate_random_number(min_number=0,max_number=len(self.list_location)-1)
+        return self.list_location[ran_in]
+
+    def create_custom_location(self , loc_name , loc_des , doors):
+        new_loc = Location(loc_name,loc_des, doors["west"] , doors["north"],doors["east"],doors["south"])
+        self.list_location.append(new_loc)
+        self.init_connection()
+        data = [["name","description","west","north","east","south"]]
+        for i in self.list_location:
+            # new_data = [i]
+        with open(self.file_location , "w" , encoding="utf-8") as csvfile:
+            csv_writer = csv.writer(csvfile)
+            csv_writer.writerows(data)
+
+
+
+    def create_custom_creature(self,c_name,c_des,c_abopt,c_speed=0):
+        new_c = None
+        if c_abopt:
+            new_c = Pymon(c_name,c_des,c_speed)
+        else:
+            new_c = Creature(c_name,c_des)
+        ran_lo = self.get_ran_location()
+        new_c.spawn(ran_lo)
+        self.list_creature(new_c)
 
     def import_creature(self,file_name=""):
         if file_name != "":
@@ -764,9 +795,8 @@ class Operation:
                 print("5) View inventory")
                 print("6) Challenge a creature")
                 print("7) Generate stats")
-                print("8) Exit the program")
-                print("8) List location")
-                print("9) List creatures")
+                print("8) Admin feature")
+                print("9) Exit the program")
 
                 input_option = input("Enter your option : ").strip()
                 if input_option == "1":
@@ -900,11 +930,52 @@ class Operation:
                 elif input_option == "7":
                     print("Generate Stats")
                     stat = self.record.gen_stats()
-                    with open("race_stats.txt", "w", encoding="utf-8") as f:
+                    with open("race_stats.txt", "a", encoding="utf-8") as f:
                         f.write(stat)
                     print(stat)  
-                    
+
                 elif input_option == "8":
+                    print("Admin Feature")
+                    while True:
+                        try:
+                            print("1) Add Custom Location")
+                            print("2) Add Custom Creature")
+                            print("3) Randomize Location Connection")
+                            admin_option = input("Enter admin option (press n to cancel) : ").strip()
+                            if admin_option == "1":
+                                print("Add Custom Location")
+                                while True:
+                                    try:
+                                        location_input = input("Enter location detail in format (location name , location description , location west connect , location north connect , location east connect , location south connect)\n").strip()
+                                        location_input_split = location_input.split(",")
+                                        if len(location_input_split) != 6:
+                                            raise LocationCustomException(option="format_len")
+                                        loc_name = location_input_split[0].strip()
+                                        loc_des = location_input_split[1].strip()
+                                        loc_west = location_input_split[2].strip()
+                                        loc_north = location_input_split[3].strip()
+                                        loc_east = location_input_split[4].strip()
+                                        loc_south = location_input_split[5].strip()
+                                        if loc_name.isnumeric() or loc_des.isnumeric() or loc_east.isnumeric() or loc_north.isnumeric() or loc_west.isnumeric() or loc_south.isnumeric():
+                                            raise LocationCustomException(option="data_type")
+                                        doors = {"east" : loc_east , "west":loc_west , "north":loc_north , "south" : loc_south}
+                                        self.record.create_custom_location(loc_name=loc_name , loc_des=loc_des , doors=doors)
+                                       
+
+                                    except Exception as e:
+                                        print(e)
+                            elif admin_option == "2":
+                                print("Add Custom Creature")
+                            elif admin_option == "3":
+                                print("Randomize Location Connection")
+                            elif admin_option.lower() == "n":
+                                break
+                            else:
+                                raise InputInvalid(admin_option,["1","2","n"])
+                        except Exception as e:
+                            print(e)
+                    
+                elif input_option == "9":
                     print("Exit the game and save?")
                     save_option = input("Do you want to save game?(y:n) ").strip()
                     if not save_option.lower() in ["y","n"]:
@@ -922,10 +993,10 @@ class Operation:
                                 csv_writer = csv.writer(csv_pet_pymon)
                                 csv_writer.writerows(data1+data2)
                         break    
-                elif input_option == "9":
+                elif input_option == "10":
                     self.record.display_list_location()
                 else:
-                    raise InputInvalid(input_option,[1,2,3,4,5,6,7,8])
+                    raise InputInvalid(input_option,[1,2,3,4,5,6,7,8,9])
                 
                 if self.current_pymon.get_energy() == 0:
                     self.release_to_wild()

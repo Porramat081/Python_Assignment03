@@ -1,3 +1,3 @@
-Pymon Nickname : "Marimon"
-Race 1 , 27/10/2025 21:21 PM , Opponent : "Toromon" , draw
-Total: W: 0 L: 0 D: 1
+Pymon Nickname : "Toromon"
+Race 1 , 28/10/2025 00:34 AM , Opponent : "Marimon" , lose
+Total: W: 0 L: 1 D: 0
