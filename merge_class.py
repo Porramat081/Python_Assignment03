@@ -40,7 +40,18 @@ class LocationCustomException(Exception):
             message = f"Invalid data type , please enter only string data type"
         super().__init__(message)
 
-
+class CreatureCustomException(Exception):
+    def __init__(self, option):
+        message = ""
+        if option == "format_len":
+            message = f'Invalid format , please enter in format (creature_name , creature_description , creature_adoptable(yes/no) , creature_speed(number)) , please try again'
+        elif option == "speed_type":
+            message = f'Speed datatype must be numeric data type'
+        elif option == "invalid_string":
+            message = f'Name , Description must be string'
+        elif option == "invalid_adopt":
+            message == f'Adoptable option , must be yes or no'
+        super().__init__(message)
 
 class Location:
     def __init__(self, name = "New room", des="" ,w = None, n = None , e = None, s = None):
@@ -249,6 +260,9 @@ class Pymon(Creature):
 
     def get_energy(self):
         return self.energy
+    
+    def get_speed(self):
+        return self.speed
     
     def set_energy(self,energy):
         self.energy = energy
@@ -639,22 +653,38 @@ class Record:
         self.init_connection()
         data = [["name","description","west","north","east","south"]]
         for i in self.list_location:
-            # new_data = [i]
-        with open(self.file_location , "w" , encoding="utf-8") as csvfile:
+            new_door = i.get_doors()
+            w_door = new_door["west"].get_name() if new_door["west"] else "None"
+            e_door = new_door["east"].get_name() if new_door["east"] else "None"
+            n_door = new_door["north"].get_name() if new_door["north"] else "None"
+            s_door = new_door["south"].get_name() if new_door["south"] else "None"
+            new_data = [i.get_name() , i.get_des() , w_door , n_door , e_door,s_door]
+            data.append(new_data)
+        with open(self.file_location , "w" , encoding="utf-8" , newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerows(data)
 
-
-
     def create_custom_creature(self,c_name,c_des,c_abopt,c_speed=0):
         new_c = None
-        if c_abopt:
-            new_c = Pymon(c_name,c_des,c_speed)
+        if c_abopt == "yes":
+            new_c = Pymon(name=c_name,des=c_des,speed=c_speed)
         else:
-            new_c = Creature(c_name,c_des)
+            new_c = Creature(name=c_name,des=c_des)
         ran_lo = self.get_ran_location()
         new_c.spawn(ran_lo)
-        self.list_creature(new_c)
+        self.list_creature.append(new_c)
+        data = [["name" , "description" , "adoptable" , "speed"]]
+        for i in self.list_creature:
+            is_adopt = "no"
+            new_speed = 0
+            if isinstance(i,Pymon):
+                is_adopt = "yes"
+                new_speed = i.get_speed()
+            new_data = [i.get_name() , i.get_des() , is_adopt , new_speed]
+            data.append(new_data)
+        with open(self.file_creatures , "w" , encoding="utf-8" ,newline="") as csvfile:
+            csv_writer = csv.writer(csvfile)
+            csv_writer.writerows(data)
 
     def import_creature(self,file_name=""):
         if file_name != "":
@@ -956,16 +986,50 @@ class Operation:
                                         loc_north = location_input_split[3].strip()
                                         loc_east = location_input_split[4].strip()
                                         loc_south = location_input_split[5].strip()
+
                                         if loc_name.isnumeric() or loc_des.isnumeric() or loc_east.isnumeric() or loc_north.isnumeric() or loc_west.isnumeric() or loc_south.isnumeric():
                                             raise LocationCustomException(option="data_type")
+                                        loc_west = location_input_split[2].strip() if location_input_split[2].lower().strip() != "none" else None
+                                        loc_north = location_input_split[3].strip() if location_input_split[3].lower().strip() != "none" else None
+                                        loc_east = location_input_split[4].strip() if location_input_split[4].lower().strip() != "none" else None
+                                        loc_south = location_input_split[5].strip() if location_input_split[5].lower().strip() != "none" else None
                                         doors = {"east" : loc_east , "west":loc_west , "north":loc_north , "south" : loc_south}
                                         self.record.create_custom_location(loc_name=loc_name , loc_des=loc_des , doors=doors)
                                        
-
+                                        print("create new location successfully")
+                                        break
                                     except Exception as e:
                                         print(e)
                             elif admin_option == "2":
                                 print("Add Custom Creature")
+                                while True:
+                                    try:
+                                        creature_input = input("Enter creature detail in format (creature_name , creature_description , creature_adoptable(yes/no) , creature_speed)\n").strip()
+                                        creature_input_split = creature_input.split(",")
+                                        if len(creature_input_split) != 4:
+                                            raise CreatureCustomException(option="format_len")
+                                        c_name = creature_input_split[0].strip()
+                                        c_des = creature_input_split[1].strip()
+                                        c_adopt = creature_input_split[2].lower().strip()
+                                        c_speed = creature_input_split[3].strip()
+
+                                        print("get all data")
+
+                                        if c_name.isnumeric() or c_des.isnumeric():
+                                            raise CreatureCustomException(option="invalid_string")
+                                        elif not c_speed.isnumeric():
+                                            raise CreatureCustomException(option="speed_type")
+                                        elif not c_adopt.lower() in ["yes" , "no"]:
+                                            raise CreatureCustomException(option="invalid_adopt")
+                                        
+                                        print("hot ot")
+                                        self.record.create_custom_creature(c_name=c_name , c_des=c_des , c_abopt=c_adopt.lower() , c_speed=int(c_speed))
+                                        print("Create new creature successfully")
+                                        break
+                                    except ValueError:
+                                        print("Speed must be integer")
+                                    except Exception as e:
+                                        print(e)
                             elif admin_option == "3":
                                 print("Randomize Location Connection")
                             elif admin_option.lower() == "n":
