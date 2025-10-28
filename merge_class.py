@@ -740,6 +740,7 @@ class Record:
         return self.list_location[ran_in]
     
     def save_current_location(self):
+        '''method for saving current location to csv file'''
         data = [["name","description","west","north","east","south"]]
         for i in self.list_location:
             new_door = i.get_doors()
