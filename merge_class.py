@@ -1,3 +1,15 @@
+'''
+Final Coding Challenge (Assignment 3)
+
+@author: Porramat Thaepngoen
+@student_id : s4144787
+@highest_level_attempted : Stage 4 : 100% (HD)
+
+- Reflection: 
+- Reference: 
+'''
+
+# import all necessary packages
 import time
 import csv
 import os
@@ -6,12 +18,15 @@ import random
 import sys
 from datetime import datetime
 
+# customized exception classes 
 class DirectionException(Exception):
+    '''customized exception to handle direction input'''
     def __init__(self,direction):
         message = f'{direction} not in the direction list , please enter only "west" , "north" , "south" , "east"'
         super().__init__(message)
 
 class NotFoundLocation(Exception):
+    '''customized exception to handle not found location'''
     def __init__(self,location:Location,direction=""):
         message = ""
         if direction == "":
@@ -21,17 +36,20 @@ class NotFoundLocation(Exception):
         super().__init__(message)
 
 class FileNotFound(Exception):
+    '''customized exception to handle file not found'''
     def __init__(self, file_name):
         message = f'{file_name} not found , please try again'
         super().__init__(message)
 
 class InputInvalid(Exception):
+    '''customized exception to handle input from user'''
     def __init__(self, input , option):
         result_string = ' '.join(map(str, option))
         message = f'{input} not in available options [{result_string}] , please try again'
         super().__init__(message)
 
 class LocationCustomException(Exception):
+    '''customized exceptioni to handle location format input'''
     def __init__(self,option):
         message = ""
         if option=="format_len":
@@ -41,6 +59,7 @@ class LocationCustomException(Exception):
         super().__init__(message)
 
 class CreatureCustomException(Exception):
+    '''customized exceptioni to handle creature format input'''
     def __init__(self, option):
         message = ""
         if option == "format_len":
@@ -54,6 +73,7 @@ class CreatureCustomException(Exception):
         super().__init__(message)
 
 class Location:
+    '''class to handle information and method relate to location'''
     def __init__(self, name = "New room", des="" ,w = None, n = None , e = None, s = None):
         self.name = name
         self.doors = {}
@@ -66,12 +86,15 @@ class Location:
         self.items = []
 
     def get_doors(self):
+        '''method for getting doors dict of the location'''
         return self.doors
 
     def get_name(self):
+        '''method for getting name of the location'''
         return self.name
 
     def get_creature(self , des=False):
+        '''method for getting creature list in the location'''
         if des:
             des_creature = ""
             is_have_pymon = False
@@ -91,6 +114,7 @@ class Location:
         return self.creatures
     
     def get_items(self , des = False):
+        '''method for getting item list in the location'''
         if des:
             des_item = ""
             for i in self.items:
@@ -103,28 +127,33 @@ class Location:
         return self.items
 
     def get_des(self):
+        '''method for getting description of the location'''
         return self.des
 
     def set_des(self,des):
+        '''method for setting description of the location'''
         self.des = des
         
     def add_creature(self, creature):
+        '''method for adding new creature to creature list of the location'''
         self.creatures.append(creature)
-        #please implement this method to by simply appending a creature to self.creatures list.
     
     def remove_creature(self,removed_creature):
+        '''method for removing creature from creature list of the location'''
         if removed_creature in self.creatures:
             self.creatures.remove(removed_creature)
 
     def add_item(self, item):
+        '''method for adding new item to item list of the location'''
         self.items.append(item)
-        #please implement this method to by simply appending an item to self.items list.
 
     def remove_item(self,item:Item):
+        '''method for removing item from item list of the location'''
         if item in self.items:
             self.items.remove(item)
 
     def find_item(self,item_name):
+        '''method for finding item from item list of the location and return selected item by item name'''
         search_item = None
         for i in self.items:
             if i.get_name().lower() == item_name.lower():
@@ -132,6 +161,7 @@ class Location:
         return search_item
 
     def find_creature(self,self_name="",find_pymon=False , is_random = False):
+        '''method for finding creature from creature list of the location and return selected creature by creature name'''
         search_creature = None
         random_index = 0
         if is_random and len(self.creatures) > 0:
@@ -147,34 +177,41 @@ class Location:
         return search_creature
 
     def get_connect_location(self,direction):
+        '''method for getting location that's connected on the input direction'''
         if not direction in ["west","north","south","east"]:
             raise DirectionException(direction)
         else:
             return self.doors[direction]
 
     def re_connect(self):
+        '''method to reset the location connection (for random connection feature)'''
         self.doors["east"] = None
         self.doors["west"] = None
         self.doors["north"] = None
         self.doors["south"] = None
 
     def connect_east(self, another_room):
+        '''method to connect location at the east direction'''
         self.doors["east"] = another_room 
         another_room.doors["west"]  = self
         
     def connect_west(self, another_room):
+        '''method to connect location at the west direction'''
         self.doors["west"] = another_room 
         another_room.doors["east"]  = self
     
     def connect_north(self, another_room):
+        '''method to connect location at the north direction'''
         self.doors["north"] = another_room 
         another_room.doors["south"]  = self
         
     def connect_south(self, another_room):
+        '''method to connect location at the south direction'''
         self.doors["south"] = another_room 
         another_room.doors["north"]  = self
 
     def display_info_one_location(self,location:Location , direction):
+        '''method for displaying the location information for binocular function'''
         if not location:
             print("This direction leads nowhere")
         else:
@@ -197,27 +234,21 @@ class Location:
             print(init_string)
 
     def display_info_by_direction(self,direction):
+        '''method for displaying information of location by direction , which is used in binocular function'''
         target_loc = self
         if direction != "current":
             target_loc = self.doors[direction]
         self.display_info_one_location(target_loc,direction)
 
-    def display_full_info(self):
-        w = self.doors["west"].get_name() if self.doors["west"] else "Nope"
-        n = self.doors["north"].get_name() if self.doors["north"] else "Nope"
-        s = self.doors["south"].get_name() if self.doors["south"] else "Nope"
-        e = self.doors["east"].get_name() if self.doors["east"] else "Nope"
-        print(self.name , w,n,s,e)
-        print(self.des)
-        print(self.creatures)
-
 class Creature:
+    '''class to handle information and method relate to creature'''
     def __init__(self,name,location:Location=None,des=""):
         self.name = name
         self.current_location = location
         self.des = des
 
     def spawn(self, location:Location , is_main=False):
+        '''method to add this creature to the location'''
         if location != None:
             if not is_main:
                 location.add_creature(self)
@@ -226,18 +257,19 @@ class Creature:
             raise NotFoundLocation(location)
     
     def get_name(self):
+        '''method for getting name of the creature'''
         return self.name
     
     def get_des(self):
+        '''method for getting description of the creature'''
         return self.des
     
     def get_location(self):
+        '''method for getting current location of the creature'''
         return self.current_location
     
-    def display_info(self):
-        print("")
-
     def display_taunt(self):
+        '''method for displaying taunt message when player challenge normal creature'''
         if self.name.lower() == "sheep":
             print("the sheep just ignored you")
         elif self.name.lower() == "chicken":
@@ -246,6 +278,7 @@ class Creature:
             print(f'{self.name} just pity you')
 
 class Pymon(Creature):
+    '''class to handle information and method relate to Pymon'''
     def __init__(self,name,location:Location=None,speed=0,energy=3,des=""):
         super().__init__(name,location,des)
         self.energy = energy
@@ -259,21 +292,27 @@ class Pymon(Creature):
         self.pogo_effect = False
     
     def get_pogo_effect(self):
+        '''method for getting pogo effect status of the Pymon'''
         return self.pogo_effect
 
     def set_pogo_effect(self,new_effect:bool):
+        '''method for setting pogo effect status of the Pymon'''
         self.pogo_effect = new_effect
 
     def get_energy(self):
+        '''method for getting this Pymons' energy'''
         return self.energy
     
     def get_speed(self):
+        '''method for getting this Pymons' speed'''
         return self.speed
     
     def set_energy(self,energy):
+        '''method for setting energy of the Pymon'''
         self.energy = energy
 
     def use_move_attempt(self):
+        '''method for updating move attempt of the Pymon'''
         self.move_attempt += 1
         if self.move_attempt == 2:
             self.drop_energy(1)
@@ -281,22 +320,27 @@ class Pymon(Creature):
             self.move_attempt = 0
 
     def add_energy(self,add_energy):
+        '''method for adding energy to the Pymon (using in eatable item)'''
         if self.energy + add_energy > 3:
             self.energy = 3
         else:
             self.energy += add_energy
     
     def drop_energy(self,drop_energy):
+        '''method for decreasing Pymons' energy'''
         self.energy -= drop_energy
     
     def add_item(self, item:Item):
+        '''method for adding item to item list of the Pymon'''
         self.item_list.append(item)
         self.current_location.remove_item(item)
 
     def drop_item(self,item:Item):
+        '''method for removing item from item list of the Pymon'''
         self.item_list.remove(item)
 
     def get_items(self,carry=False):
+        '''method for getting item or item list of the Pymon'''
         if carry:
             if len(self.item_list) > 0:
                 return self.item_list[0]
@@ -305,13 +349,16 @@ class Pymon(Creature):
             return self.item_list
         
     def use_item(self,item_index):
+        '''method for using selected item in item list by item index'''
         selected_item = self.item_list[item_index]
         selected_item.activate_effect(self)
         
     def transfer_items(self,item_list):
+        '''method for transferring item list to Pymon , using when another pymon run out of energy'''
         self.item_list += item_list
 
     def move(self,direction):
+        '''method for moving the Pymon to another location by direction'''
         direction = direction.lower()
         if not direction in ["west","north","south","east"]:
             raise DirectionException(direction)
@@ -324,6 +371,7 @@ class Pymon(Creature):
                 return True
 
     def challenge_race(self,target_creature:Pymon):
+        '''method for challenging another Pymon'''
         sec = 0
         distance_self = 100
         distance_enemy = 100
@@ -332,6 +380,7 @@ class Pymon(Creature):
         pymon_player = self.get_name()
         pymon_enemy = target_creature.get_name()
 
+        '''loop for racing until distance equals zero'''
         while not distance_self <= 0 and not distance_enemy <= 0:
             luck_player = Luck()
             sec_speed_player = luck_player.cal_sec_speed(self.speed)
@@ -369,27 +418,35 @@ class Pymon(Creature):
                 return "lose"
 
     def display_info(self):
+        '''method for displaying Pymon information to player'''
         print(f"\nHi Player, my name is {self.name}, I am {self.des}.\nMy energy level is {self.energy}/3.What can I do to help you?\n")
 
 class Item:
+    '''class to handle information and method relate to item'''
     def __init__(self,name,des=""):
         self.name = name
         self.des = des
+
     def get_name(self):
+        '''method for getting name of the item'''
         return self.name
 
 class InventoryItem(Item):
+    '''class to handle information and method relate to pickable item'''
     def __init__(self, name, des=""):
         super().__init__(name, des)
 
     def activate_effect(self,current_pymon:Pymon):
+        '''abstract method for each item class'''
         print("Activate Item Effect")
 
 class Pogostick(InventoryItem):
+    '''class to handle information and method relate to pogo stick item'''
     def __init__(self, name="pogo", des=""):
         super().__init__(name, des)
     
     def activate_effect(self,current_pymon:Pymon):
+        '''method for activating item effect to input Pymon'''
         current_pogo_effect = current_pymon.get_pogo_effect()
         if not current_pogo_effect:
             # activate pogo effect
@@ -399,16 +456,20 @@ class Pogostick(InventoryItem):
             print("You're already using Pogo effect right now , it'll disappear after race")
         
     def distroy_after_match(self,current_pymon:Pymon):
+        '''method for displaying pogo effect disappear after finish racing'''
         current_pymon.set_pogo_effect(False)
         current_pymon.drop_item(self)
         print("Pogo stick is broken and disappear")
 
 class Binocular(InventoryItem):
+    '''class to handle information and method relate to binocular item'''
     def __init__(self, name="binocular" ,des=""):
         super().__init__(name, des)
     
     def activate_effect(self,current_pymon:Pymon):
+        '''method for activating item effect to input Pymon'''
         while True:
+            '''loop for taking direction input from user to checking location information'''
             try:
                 current_loc = current_pymon.get_location()
                 input_direction = input("Enter direction that you want to check (press n to cancel) : ").strip()
@@ -423,14 +484,17 @@ class Binocular(InventoryItem):
                 print(e)
         
 class ConsumeItem(Item):
+    '''class to handle information and method relate to consume item'''
     def __init__(self, name, des="" , gain_power = 1):
         super().__init__(name, des)
         self.gain_power = gain_power
 
     def get_gain_power(self):
+        '''method for getting gain power of the item'''
         return self.gain_power
     
     def activate_effect(self,current_pymon:Pymon):
+        '''method for activating item effect to input Pymon'''
         if current_pymon.get_energy() < 3:
             current_pymon.add_energy(self.get_gain_power())
             current_pymon.drop_item(self)
@@ -439,6 +503,7 @@ class ConsumeItem(Item):
             print(f'\nYour Pymon has max energy , don\'t need to eat\n')
 
 class Luck:
+    '''class to handle information and method relate to luck factor'''
     def __init__(self):
         ran_percentage = Operation.generate_random_number(max_number=50 , min_number=20 , is_float=True)
         ran_sign = Operation.generate_random_number(max_number=1)
@@ -449,9 +514,11 @@ class Luck:
             self.percentage = ran_percentage * (-1)
     
     def cal_sec_speed(self, initial_speed):
+        '''method for calculating speed at each particular second'''
         return float(initial_speed) + ((self.percentage/100 )* float(initial_speed))
 
 class RaceStat:
+    '''class to handle information and method relate to race stat'''
     def __init__(self,pymon_name,result,opponent_name):
         self.pymon_name = pymon_name
         self.result = result
@@ -459,13 +526,16 @@ class RaceStat:
         self.opponent_name = opponent_name
 
     def get_pymon_name(self):
+        '''method for getting pymon name in this race statistic report'''
         return self.pymon_name
     
     def get_tuple_format(self):
+        '''method for getting racing stat report in tuple format'''
         return (self.result,self.time_stamp,self.opponent_name)
     
     @staticmethod
     def get_format_dict(race_stat_list):
+        '''method for formatting race result in dictionary format'''
         pymon_dict = {}
         for race in race_stat_list:
             pymon_name = race.get_pymon_name()
@@ -477,11 +547,10 @@ class RaceStat:
         return pymon_dict
     
 class SaveFile:
-    def __init__(self,file_name):
-        pass
-
+    '''class to handle information and static method for manipulating save file'''
     @staticmethod
     def search_save():
+        '''method for finding game save file in current directory'''
         save_list = []
         for i in os.listdir():
             if i.lower().startswith("gamesave") and i.lower().endswith(".csv"):
@@ -490,8 +559,7 @@ class SaveFile:
     
     @staticmethod
     def load_save_data(save_path):
-        print(save_path)
-    
+        '''method for loading game data from save_path input'''
         current_pymon = None
         list_pet = []
         list_other = []
@@ -500,56 +568,51 @@ class SaveFile:
             reader = csv.reader(csvfile)
             next(reader)  # Skip the header row
         
+            '''loop for getting each row data'''
             for row in reader:
-            
                 pymon_name = row[0].strip()
                 pymon_loc_name = row[1].strip()
                 pymon_type = row[2].strip()
                 pymon_energy = row[3].strip()
                 pymon_inventory_arr  = row[4].split(",")
-
                 if pymon_energy and int(pymon_energy) > 0:
-
                     current_pymon = (pymon_name,pymon_loc_name,pymon_type,pymon_energy,pymon_inventory_arr)
                     list_pet.append(current_pymon)
                 else:
                     other_creature = (pymon_name,pymon_loc_name,pymon_type)
                     list_other.append(other_creature)
-          
-            
         return list_pet , list_other
                 
     @staticmethod
     def gen_save_pet_data(current_pet , other_list):
+        '''method for creating new save game file about player pymons information'''
         current_item = ""
         current_location = current_pet.get_location().get_name()
+        '''loop for converting item list to items string'''
         for index , item in enumerate(current_pet.get_items()):
             current_item += item.get_name()
             if index != (len(current_pet.get_items())-1):
                 current_item += ","
         data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_location ,"pymon", current_pet.get_energy() , current_item]]
-   
+        '''loop for generating new data for writing on save game file'''
         for other in other_list:
-           
             if other.get_name() == current_pet.get_name():
                 continue
             other_item = ""
-       
             if len(other.get_items()) > 0:
                 for index , item in enumerate(other.get_items()):
                     other_item += item.get_name()
                     if index != (len(current_pet.get_items())-1):
                         other_item += ","
-
             new_data = [other.get_name() , current_location , "pymon",other.get_energy() , other_item]
-        
             data.append(new_data)
-        
         return data
         
     @staticmethod
     def gen_save_other_data(list_other_creature , own_list):
+        '''method for creating new save game file about other creatures information'''
         data = []
+        '''loop for generating new data to writing on save game file'''
         for i in list_other_creature:
             if i in own_list:
                 continue
@@ -561,6 +624,7 @@ class SaveFile:
         return data
 
 class Record:
+    '''class to handle information and method relate to record'''
     def __init__(self):
         self.file_location = "locations.csv"
         self.file_creatures = "creatures.csv"
@@ -571,10 +635,12 @@ class Record:
         self.list_stat = []
 
     def gen_stats(self):
+        '''method for generating race stat text file'''
         if len(self.list_stat) == 0:
             raise Exception("No race stat")
         list_format = RaceStat.get_format_dict(self.list_stat)
         display_string = ""
+        '''loop for creating data to write on text file'''
         for race_stat in list(list_format.items()):
             display_string += f'Pymon Nickname : "{race_stat[0]}"\n'
             win_count = 0
@@ -593,10 +659,12 @@ class Record:
         return display_string
 
     def record_race_stat(self,pymon_name,result,another_name):
+        '''method for adding new race result to stat list'''
         new_record = RaceStat(pymon_name,result,another_name)
         self.list_stat.append(new_record)
 
     def get_list(self,key=""):
+        '''method for getting stat list in this record'''
         if key == "location":
             return self.list_location
         elif key == "creature":
@@ -605,6 +673,7 @@ class Record:
             return self.list_item
 
     def check_available_pymon(self):
+        '''method for checking available pymon in the list'''
         for loc in self.list_location:
             if len(loc.get_creature()) > 0:
                 for creature in loc.get_creature():
@@ -613,6 +682,7 @@ class Record:
         return False
 
     def import_location(self,file_name=""):
+        '''method for importing location from location file'''
         if file_name != "":
             self.file_location = file_name
         if not op.exists(self.file_location):
@@ -633,7 +703,7 @@ class Record:
                 self.list_location.append(current_loc)
                
     def init_connection(self , randomized=False):
-
+        '''method for creating connection in each location in location list'''
         for i in self.list_location:
             doors = i.get_doors()
             if randomized:
@@ -664,10 +734,12 @@ class Record:
                     i.connect_south(loc_s)
 
     def get_ran_location(self):
+        '''method for getting random location'''
         ran_in = Operation.generate_random_number(min_number=0,max_number=len(self.list_location)-1)
         return self.list_location[ran_in]
 
     def create_custom_location(self , loc_name , loc_des , doors):
+        '''method for creating new location and adding to location list'''
         new_loc = Location(loc_name,loc_des, doors["west"] , doors["north"],doors["east"],doors["south"])
         self.list_location.append(new_loc)
         self.init_connection()
@@ -685,6 +757,7 @@ class Record:
             csv_writer.writerows(data)
 
     def create_custom_creature(self,c_name,c_des,c_abopt,c_speed=0):
+        '''method for creating new creature and adding to creature list'''
         new_c = None
         if c_abopt == "yes":
             new_c = Pymon(name=c_name,des=c_des,speed=c_speed)
@@ -707,6 +780,7 @@ class Record:
             csv_writer.writerows(data)
 
     def import_creature(self,file_name=""):
+        '''method for importing creature from creature file'''
         if file_name != "":
             self.file_creatures = file_name
         if not op.exists(self.file_creatures):
@@ -725,10 +799,10 @@ class Record:
                     current_creature = Pymon(c_name,des=c_des,speed=c_speed)
                 else:
                     current_creature = Creature(c_name,des=c_des)
-                
                 self.update_list_creature(current_creature)
     
     def import_item(self,file_name=""):
+        '''method for importing item from item file'''
         if file_name != "":
             self.file_items = file_name
         if not op.exists(self.file_items):
@@ -754,16 +828,18 @@ class Record:
                             current_item = InventoryItem(name=i_name , des=i_des)
                 elif i_pick == "no":
                     current_item = Item(name=i_name,des=i_des)
-                
                 self.update_list_item(current_item)
                 
     def update_list_item(self,item:Item , is_remove=False):
+        '''method for adding or removing item in item list'''
         if not is_remove:
             self.list_item.append(item)
         else:
-            pass
+            if item in self.list_item:
+                self.list_item.remove(item)
 
     def update_list_creature(self,creature:Creature , is_remove=False):
+        '''method for updating creature in creature list'''
         if not is_remove:
             self.list_creature.append(creature)
         else:
@@ -771,6 +847,7 @@ class Record:
             self.list_creature.remove(target_creature)
 
     def find_location(self,loc_name):
+        '''method for finding location in location list'''
         search_loc = None
         for i in self.list_location:
             if i.get_name().lower() == loc_name.lower():
@@ -778,6 +855,7 @@ class Record:
         return search_loc
     
     def find_creature(self,creature_name , on_load = False):
+        '''method for finding creature in creature list'''
         search_creature = None
         for i in self.list_creature:
             if i.get_name().lower() == creature_name.lower():
@@ -788,20 +866,18 @@ class Record:
         return search_creature
     
     def find_item(self,item_name):
+        '''method for finding item in item list'''
         search_item = None
         for i in self.list_item:
             if i.get_name().lower() == item_name.lower():
                 search_item = i
         return search_item
 
-    def display_list_location(self):
-        for i in self.list_location:
-            i.display_full_info()
-
 class Operation:
-
+    '''class to handle information and method relate to operation in the program'''
     @staticmethod
     def generate_random_number(max_number = 1 , min_number = 0 , is_float = False):
+        '''method for generating random number from min_number to max_number'''
         if is_float:
             r = random.uniform(min_number,max_number)
             return r
@@ -811,7 +887,7 @@ class Operation:
         return 0
     
     def release_to_wild(self):
-        # remove released pymon from pat_list
+        '''method for removing pymon from pet list when release to wild'''
         if self.current_pymon in self.pet_list:
             print(f"{self.current_pymon.get_name()} ran out of energy , Released to the wild")
             self.pet_list.remove(self.current_pymon)
@@ -835,6 +911,7 @@ class Operation:
             self.current_pymon.transfer_items(old_item_list)
 
     def handle_menu(self):
+        '''method for displaying program menus and taking user option for operating'''
         while not self.is_over:
             try:
                 print("Please issue a command to your Pymon:")
@@ -1076,8 +1153,6 @@ class Operation:
                                 csv_writer = csv.writer(csv_pet_pymon)
                                 csv_writer.writerows(data1+data2)
                         break    
-                elif input_option == "10":
-                    self.record.display_list_location()
                 else:
                     raise InputInvalid(input_option,[1,2,3,4,5,6,7,8,9])
                 
@@ -1093,6 +1168,7 @@ class Operation:
         self.is_over = False
 
     def setup(self,location_file="",creature_file="",item_file=""):
+        '''method for set up program and import files to prepare data'''
         self.record = Record()
         self.record.import_location(file_name=location_file)
         self.record.import_creature(file_name=creature_file)
@@ -1175,20 +1251,9 @@ class Operation:
         for item in items:
             ran_index = Operation.generate_random_number(min_number=0,max_number=(len(locations)-1))
             locations[ran_index].add_item(item)
-          
-    def display_setup(self):
-        for location in self.locations:
-            print(location.name + " has the following creatures:")
-            for creature in location.creatures:
-                print(creature.name)
-
-    #you may use this test run to help test methods during development
-    def test_run(self):
-        print(self.current_pymon.get_location().get_name())
-        self.current_pymon.move("west")
-        print(self.current_pymon.get_location().get_name())
         
     def start_game(self):
+        '''method for display game starting detail and call menu handle method'''
         print("Welcome to Pymon World\n")
         print("It's just you and your loyal Pymon roaming around to find more Pymons to capture and adopt.\n")
         current_location = self.current_pymon.get_location()
@@ -1203,6 +1268,7 @@ class Operation:
             else:
                 print("Game Over")
 
+'''program entry point'''
 if __name__ == '__main__':
     operation = Operation()
     try:
@@ -1213,6 +1279,7 @@ if __name__ == '__main__':
         if len(sys.argv) > 4:
             raise Exception("Argument out of range , please enter in this format (location.csv creature.csv item.csv)")
 
+        '''loop for getting argument file path name'''
         for i in range(1,len(sys.argv)):
             if i == 1:
                 location_file = sys.argv[1]
