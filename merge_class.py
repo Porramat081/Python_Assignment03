@@ -152,6 +152,12 @@ class Location:
         else:
             return self.doors[direction]
 
+    def re_connect(self):
+        self.doors["east"] = None
+        self.doors["west"] = None
+        self.doors["north"] = None
+        self.doors["south"] = None
+
     def connect_east(self, another_room):
         self.doors["east"] = another_room 
         another_room.doors["west"]  = self
@@ -626,22 +632,36 @@ class Record:
                 current_loc = Location(loc_name,loc_des,loc_w,loc_n,loc_e,loc_s)
                 self.list_location.append(current_loc)
                
-    def init_connection(self , make_random=False):
+    def init_connection(self , randomized=False):
 
         for i in self.list_location:
             doors = i.get_doors()
-            if doors["east"] and not isinstance(doors["east"], Location):
-                loc_e = self.find_location(doors["east"])
-                i.connect_east(loc_e)
-            if doors["west"] and not isinstance(doors["west"], Location):
-                loc_w = self.find_location(doors["west"])
-                i.connect_west(loc_w)
-            if doors["north"] and not isinstance(doors["north"], Location):
-                loc_n = self.find_location(doors["north"])
-                i.connect_north(loc_n)
-            if doors["south"] and not isinstance(doors["south"], Location):
-                loc_s = self.find_location(doors["south"])
-                i.connect_south(loc_s)
+            if randomized:
+                vals = list(doors.values())
+                random.shuffle(vals)
+                doors = dict(zip(doors.keys(), vals))
+                i.re_connect()
+                if doors["east"]:
+                    i.connect_east(doors["east"])
+                if doors["west"]:
+                    i.connect_west(doors["west"])
+                if doors["north"]:
+                    i.connect_north(doors["north"])
+                if doors["south"]:
+                    i.connect_south(doors["south"])
+            else:
+                if doors["east"] and not isinstance(doors["east"], Location):
+                    loc_e = self.find_location(doors["east"])
+                    i.connect_east(loc_e)
+                if doors["west"] and not isinstance(doors["west"], Location):
+                    loc_w = self.find_location(doors["west"])
+                    i.connect_west(loc_w)
+                if doors["north"] and not isinstance(doors["north"], Location):
+                    loc_n = self.find_location(doors["north"])
+                    i.connect_north(loc_n)
+                if doors["south"] and not isinstance(doors["south"], Location):
+                    loc_s = self.find_location(doors["south"])
+                    i.connect_south(loc_s)
 
     def get_ran_location(self):
         ran_in = Operation.generate_random_number(min_number=0,max_number=len(self.list_location)-1)
@@ -1013,8 +1033,6 @@ class Operation:
                                         c_adopt = creature_input_split[2].lower().strip()
                                         c_speed = creature_input_split[3].strip()
 
-                                        print("get all data")
-
                                         if c_name.isnumeric() or c_des.isnumeric():
                                             raise CreatureCustomException(option="invalid_string")
                                         elif not c_speed.isnumeric():
@@ -1022,7 +1040,6 @@ class Operation:
                                         elif not c_adopt.lower() in ["yes" , "no"]:
                                             raise CreatureCustomException(option="invalid_adopt")
                                         
-                                        print("hot ot")
                                         self.record.create_custom_creature(c_name=c_name , c_des=c_des , c_abopt=c_adopt.lower() , c_speed=int(c_speed))
                                         print("Create new creature successfully")
                                         break
@@ -1032,6 +1049,8 @@ class Operation:
                                         print(e)
                             elif admin_option == "3":
                                 print("Randomize Location Connection")
+                                self.record.init_connection(randomized = True)
+                                print("Random Location Successfully")
                             elif admin_option.lower() == "n":
                                 break
                             else:

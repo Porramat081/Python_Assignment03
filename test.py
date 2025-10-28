@@ -1,9 +1,12 @@
-def test():
-    return [1] , [2]
+import random
 
-list_1 , list_2 = test()
+doors = {"east": 1, "west": 2, "north": 3, "south": None}
 
-print(list_1)
-print(list_2)
+vals = list(doors.values())
 
-c = "".isnumeric()
+
+random.shuffle(vals)
+
+reassigned = dict(zip(doors.keys(), vals))
+
+print(reassigned)
