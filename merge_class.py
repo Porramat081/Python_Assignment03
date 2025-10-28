@@ -570,11 +570,12 @@ class SaveFile:
         
             '''loop for getting each row data'''
             for row in reader:
+                print(row)
                 pymon_name = row[0].strip()
                 pymon_loc_name = row[1].strip()
                 pymon_type = row[2].strip()
                 pymon_energy = row[3].strip()
-                pymon_inventory_arr  = row[4].split(",")
+                pymon_inventory_arr  = row[4:]
                 if pymon_energy and int(pymon_energy) > 0:
                     current_pymon = (pymon_name,pymon_loc_name,pymon_type,pymon_energy,pymon_inventory_arr)
                     list_pet.append(current_pymon)
@@ -590,9 +591,10 @@ class SaveFile:
         current_location = current_pet.get_location().get_name()
         '''loop for converting item list to items string'''
         for index , item in enumerate(current_pet.get_items()):
-            current_item += item.get_name()
-            if index != (len(current_pet.get_items())-1):
-                current_item += ","
+            if item:
+                current_item += item.get_name()
+                if index != (len(current_pet.get_items())-1):
+                    current_item += ","
         data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_location ,"pymon", current_pet.get_energy() , current_item]]
         '''loop for generating new data for writing on save game file'''
         for other in other_list:
@@ -614,13 +616,12 @@ class SaveFile:
         data = []
         '''loop for generating new data to writing on save game file'''
         for i in list_other_creature:
-            if i in own_list:
-                continue
-            i_type = "creature"
-            if isinstance(i,Pymon):
-                i_type = "pymon"
-            new_data = [i.get_name(),i.get_location().get_name(),i_type,0,""]
-            data.append(new_data)
+            if not i in own_list:
+                i_type = "creature"
+                if isinstance(i,Pymon):
+                    i_type = "pymon"
+                new_data = [i.get_name(),i.get_location().get_name(),i_type,0,""]
+                data.append(new_data)
         return data
 
 class Record:
@@ -737,12 +738,8 @@ class Record:
         '''method for getting random location'''
         ran_in = Operation.generate_random_number(min_number=0,max_number=len(self.list_location)-1)
         return self.list_location[ran_in]
-
-    def create_custom_location(self , loc_name , loc_des , doors):
-        '''method for creating new location and adding to location list'''
-        new_loc = Location(loc_name,loc_des, doors["west"] , doors["north"],doors["east"],doors["south"])
-        self.list_location.append(new_loc)
-        self.init_connection()
+    
+    def save_current_location(self):
         data = [["name","description","west","north","east","south"]]
         for i in self.list_location:
             new_door = i.get_doors()
@@ -755,6 +752,13 @@ class Record:
         with open(self.file_location , "w" , encoding="utf-8" , newline="") as csvfile:
             csv_writer = csv.writer(csvfile)
             csv_writer.writerows(data)
+
+    def create_custom_location(self , loc_name , loc_des , doors):
+        '''method for creating new location and adding to location list'''
+        new_loc = Location(loc_name,loc_des, doors["west"] , doors["north"],doors["east"],doors["south"])
+        self.list_location.append(new_loc)
+        self.init_connection()
+        self.save_current_location()
 
     def create_custom_creature(self,c_name,c_des,c_abopt,c_speed=0):
         '''method for creating new creature and adding to creature list'''
@@ -1152,6 +1156,8 @@ class Operation:
                                 data2 = SaveFile.gen_save_other_data(self.record.get_list(key="creature") , own_list)
                                 csv_writer = csv.writer(csv_pet_pymon)
                                 csv_writer.writerows(data1+data2)
+                            '''save new location'''
+                            self.record.save_current_location()
                         break    
                 else:
                     raise InputInvalid(input_option,[1,2,3,4,5,6,7,8,9])
@@ -1215,6 +1221,7 @@ class Operation:
             for i in list_pet_load:
                 search_pet = self.record.find_creature(i[0].strip(),on_load=True)
                 search_pet.set_energy(int(i[3]))
+                search_pet.spawn(current_loc,is_main=True)
                 for item in i[4]:
                     search_item = self.record.find_item(item.strip())
                     if search_item:
