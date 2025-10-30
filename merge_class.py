@@ -3,10 +3,19 @@ Final Coding Challenge (Assignment 3)
 
 @author: Porramat Thaepngoen
 @student_id : s4144787
-@highest_level_attempted : Stage 4 : 100% (HD)
+@highest_level_attempted : completed Stage 4 : 100% (HD)
 
-- Reflection: 
+- Reflection: I did not use Generative AI to write, edit, or debug any source code for this assignment.
+I used AI only as a reference to recall standard Python functionality
+(e.g., “in python, how to re-order dict data” reminders about shuffling a list of keys or using random.sample, then rebuilding a dict). No code was copied.
+All problem solving, program structure, and implementation decisions for this assignment are my own.
+I validated the approach against official docs and with targeted tests relevant to the task
+(key preservation, value integrity, and randomized order where applicable).
+
 - Reference: 
+1. Python Software Foundation, “Built-in Functions,” entry for filter(). Python 3.14.0 Documentation. Accessed: Oct. 30, 2025.
+2. Python Software Foundation, “What’s New in Python 3.11,” note on removal of the random parameter from random.shuffle(). Accessed: Oct. 30, 2025.
+3. Python Software Foundation, “random — Generate pseudo-random numbers,” Python 3.14.0 Documentation. Accessed: Oct. 30, 2025.
 '''
 
 # import all necessary packages
