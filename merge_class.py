@@ -876,6 +876,14 @@ class Record:
             if i.get_name().lower() == item_name.lower():
                 search_item = i
         return search_item
+    
+    def display_setup(self):
+        for location in self.list_location:
+            print(location.get_name() + " has the following creatures:")
+            for creature in location.creatures:
+                print(creature.get_name())
+            for item in location.items:
+                print(item.get_name())
 
 class Operation:
     '''class to handle information and method relate to operation in the program'''
@@ -1132,6 +1140,9 @@ class Operation:
                                 print("Randomize Location Connection")
                                 self.record.init_connection(randomized = True)
                                 print("Random Location Successfully")
+                            elif admin_option == "4":
+                                print("Display setup data")
+                                self.record.display_setup()
                             elif admin_option.lower() == "n":
                                 break
                             else:
