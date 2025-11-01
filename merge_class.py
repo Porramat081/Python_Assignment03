@@ -9,13 +9,14 @@ Final Coding Challenge (Assignment 3)
 I used AI only as a reference to recall standard Python functionality
 (e.g., “in python, how to re-order dict data” reminders about shuffling a list of keys or using random.sample, then rebuilding a dict). No code was copied.
 All problem solving, program structure, and implementation decisions for this assignment are my own.
-I validated the approach against official docs and with targeted tests relevant to the task
-(key preservation, value integrity, and randomized order where applicable).
+I also refer to the Python documentation for additional information, as cited in the provided references and validated the approach against the assignment docs 
+and with targeted tests relevant to the task (key preservation, value integrity, and randomized order where applicable).
 
 - Reference: 
-1. Python Software Foundation, “Built-in Functions,” entry for filter(). Python 3.14.0 Documentation. Accessed: Oct. 30, 2025.
-2. Python Software Foundation, “What’s New in Python 3.11,” note on removal of the random parameter from random.shuffle(). Accessed: Oct. 30, 2025.
-3. Python Software Foundation, “random — Generate pseudo-random numbers,” Python 3.14.0 Documentation. Accessed: Oct. 30, 2025.
+1. “Built-in Functions,” Python documentation. https://docs.python.org/3/library/functions.html#filter
+2. “random — Generate pseudo-random numbers,” Python documentation. https://docs.python.org/3/library/random.html#module-random
+3. “random.shuffle — Generate pseudo-random numbers,” Python documentation. https://docs.python.org/3/library/random.html#random.shuffle
+4. “time — Time access and conversions,” Python documentation. https://docs.python.org/3/library/time.html#time.sleep
 '''
 
 # import all necessary packages
@@ -413,7 +414,7 @@ class Pymon(Creature):
             else:
                 leader = None
             sec += 1
-            time.sleep(1)
+            time.sleep(1) # sleep method in time module [4]
 
         if not leader:
             print(f"{pymon_player} (your Pymon) and {pymon_enemy} (Opponent) reached the finish line in {sec} seconds at the same time! You draw!")
@@ -717,7 +718,7 @@ class Record:
             doors = i.get_doors()
             if randomized:
                 vals = list(doors.values())
-                random.shuffle(vals)
+                random.shuffle(vals) # shuffle method in random module [3]
                 doors = dict(zip(doors.keys(), vals))
                 i.re_connect()
                 if doors["east"]:
@@ -890,7 +891,7 @@ class Operation:
     '''class to handle information and method relate to operation in the program'''
     @staticmethod
     def generate_random_number(max_number = 1 , min_number = 0 , is_float = False):
-        '''method for generating random number from min_number to max_number'''
+        '''method for generating random number from min_number to max_number [2]'''
         if is_float:
             r = random.uniform(min_number,max_number)
             return r
