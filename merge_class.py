@@ -579,7 +579,6 @@ class SaveFile:
         
             '''loop for getting each row data'''
             for row in reader:
-                print(row)
                 pymon_name = row[0].strip()
                 pymon_loc_name = row[1].strip()
                 pymon_type = row[2].strip()
