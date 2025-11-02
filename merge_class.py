@@ -37,7 +37,7 @@ class DirectionException(Exception):
 
 class NotFoundLocation(Exception):
     '''customized exception to handle not found location'''
-    def __init__(self,location:Location,direction=""):
+    def __init__(self,location,direction=""):
         message = ""
         if direction == "":
             message = f'{location.name} not found'
@@ -157,7 +157,7 @@ class Location:
         '''method for adding new item to item list of the location'''
         self.items.append(item)
 
-    def remove_item(self,item:Item):
+    def remove_item(self,item):
         '''method for removing item from item list of the location'''
         if item in self.items:
             self.items.remove(item)
@@ -220,7 +220,7 @@ class Location:
         self.doors["south"] = another_room 
         another_room.doors["north"]  = self
 
-    def display_info_one_location(self,location:Location , direction):
+    def display_info_one_location(self,location , direction):
         '''method for displaying the location information for binocular function'''
         if not location:
             print("This direction leads nowhere")
@@ -252,12 +252,12 @@ class Location:
 
 class Creature:
     '''class to handle information and method relate to creature'''
-    def __init__(self,name,location:Location=None,des=""):
+    def __init__(self,name,location=None,des=""):
         self.name = name
         self.current_location = location
         self.des = des
 
-    def spawn(self, location:Location , is_main=False):
+    def spawn(self, location , is_main=False):
         '''method to add this creature to the location'''
         if location != None:
             if not is_main:
@@ -289,7 +289,7 @@ class Creature:
 
 class Pymon(Creature):
     '''class to handle information and method relate to Pymon'''
-    def __init__(self,name,location:Location=None,speed=0,energy=3,des=""):
+    def __init__(self,name,location=None,speed=0,energy=3,des=""):
         super().__init__(name,location,des)
         self.energy = energy
         if speed == 0:
@@ -305,7 +305,7 @@ class Pymon(Creature):
         '''method for getting pogo effect status of the Pymon'''
         return self.pogo_effect
 
-    def set_pogo_effect(self,new_effect:bool):
+    def set_pogo_effect(self,new_effect):
         '''method for setting pogo effect status of the Pymon'''
         self.pogo_effect = new_effect
 
@@ -340,12 +340,12 @@ class Pymon(Creature):
         '''method for decreasing Pymons' energy'''
         self.energy -= drop_energy
     
-    def add_item(self, item:Item):
+    def add_item(self, item):
         '''method for adding item to item list of the Pymon'''
         self.item_list.append(item)
         self.current_location.remove_item(item)
 
-    def drop_item(self,item:Item):
+    def drop_item(self,item):
         '''method for removing item from item list of the Pymon'''
         self.item_list.remove(item)
 
@@ -380,7 +380,7 @@ class Pymon(Creature):
                 self.current_location = new_location
                 return True
 
-    def challenge_race(self,target_creature:Pymon):
+    def challenge_race(self,target_creature):
         '''method for challenging another Pymon'''
         sec = 0
         distance_self = 100
@@ -446,7 +446,7 @@ class InventoryItem(Item):
     def __init__(self, name, des=""):
         super().__init__(name, des)
 
-    def activate_effect(self,current_pymon:Pymon):
+    def activate_effect(self,current_pymon):
         '''abstract method for each item class'''
         print("Activate Item Effect")
 
@@ -455,7 +455,7 @@ class Pogostick(InventoryItem):
     def __init__(self, name="pogo", des=""):
         super().__init__(name, des)
     
-    def activate_effect(self,current_pymon:Pymon):
+    def activate_effect(self,current_pymon):
         '''method for activating item effect to input Pymon'''
         current_pogo_effect = current_pymon.get_pogo_effect()
         if not current_pogo_effect:
@@ -465,7 +465,7 @@ class Pogostick(InventoryItem):
         else:
             print("You're already using Pogo effect right now , it'll disappear after race")
         
-    def distroy_after_match(self,current_pymon:Pymon):
+    def distroy_after_match(self,current_pymon):
         '''method for displaying pogo effect disappear after finish racing'''
         current_pymon.set_pogo_effect(False)
         current_pymon.drop_item(self)
@@ -476,7 +476,7 @@ class Binocular(InventoryItem):
     def __init__(self, name="binocular" ,des=""):
         super().__init__(name, des)
     
-    def activate_effect(self,current_pymon:Pymon):
+    def activate_effect(self,current_pymon):
         '''method for activating item effect to input Pymon'''
         while True:
             '''loop for taking direction input from user to checking location information'''
@@ -503,7 +503,7 @@ class ConsumeItem(Item):
         '''method for getting gain power of the item'''
         return self.gain_power
     
-    def activate_effect(self,current_pymon:Pymon):
+    def activate_effect(self,current_pymon):
         '''method for activating item effect to input Pymon'''
         if current_pymon.get_energy() < 3:
             current_pymon.add_energy(self.get_gain_power())
@@ -607,7 +607,7 @@ class SaveFile:
         data = [["name" , "location" , "type","energy" , "inventory"] , [current_pet.get_name() , current_location ,"pymon", current_pet.get_energy() , current_item]]
         '''loop for generating new data for writing on save game file'''
         for other in other_list:
-            if other.get_name() == current_pet.get_name():
+            if other.get_name() == current_pet.get_name() or not isinstance(other,Pymon):
                 continue
             other_item = ""
             if len(other.get_items()) > 0:
@@ -647,7 +647,7 @@ class Record:
     def gen_stats(self):
         '''method for generating race stat text file'''
         if len(self.list_stat) == 0:
-            raise Exception("No race stat")
+            raise Exception("No race stat today")
         list_format = RaceStat.get_format_dict(self.list_stat)
         display_string = ""
         '''loop for creating data to write on text file'''
@@ -844,7 +844,7 @@ class Record:
                     current_item = Item(name=i_name,des=i_des)
                 self.update_list_item(current_item)
                 
-    def update_list_item(self,item:Item , is_remove=False):
+    def update_list_item(self,item , is_remove=False):
         '''method for adding or removing item in item list'''
         if not is_remove:
             self.list_item.append(item)
@@ -852,7 +852,7 @@ class Record:
             if item in self.list_item:
                 self.list_item.remove(item)
 
-    def update_list_creature(self,creature:Creature , is_remove=False):
+    def update_list_creature(self,creature , is_remove=False):
         '''method for updating creature in creature list'''
         if not is_remove:
             self.list_creature.append(creature)
@@ -1281,9 +1281,9 @@ class Operation:
         self.handle_menu()
         if self.is_over:
             if not self.record.check_available_pymon():
-                print("Game Clear")
+                print("Game Clear , You caught all pymon in the game")
             else:
-                print("Game Over")
+                print("Game Over , You don't have any pymon left")
 
 '''program entry point'''
 if __name__ == '__main__':
